@@ -6,7 +6,6 @@
 
 # Minecraft Server Runtime Data (Keep repo clean)
 /data/
-*.jar
 *.log
 /logs/
 /crash-reports/
