@@ -5,7 +5,6 @@
 *.key
 
 # Minecraft Server Runtime Data (Keep repo clean)
-*-data/
 /data/
 *.jar
 *.log
