@@ -12,8 +12,8 @@ services:
     environment:
       TYPE: "VELOCITY"
       MEMORY: "${VELOCITY_MEMORY:-512M}"
-      TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "geyser,floodgate,velocitab,authmevelocity"
+      MODRINTH_PROJECTS: "geyser,velocitab,authmevelocity"
+      PLUGINS: "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity"
       REPLACE_ENV_VARIABLES: "true"
       REPLACE_ENV_VARIABLE_PREFIX: "CFG_"
       CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
@@ -43,14 +43,14 @@ services:
       USE_AIKAR_FLAGS: "true"
       ONLINE_MODE: "FALSE"
       DIFFICULTY: "${MC_DIFFICULTY:-hard}"
-      VIEW_DISTANCE: "${SURVIVAL_VIEW_DISTANCE:-8}"
-      SIMULATION_DISTANCE: "${SURVIVAL_SIM_DISTANCE:-6}"
       TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,grimac,spark,placeholderapi,floodgate,essentialsx,syncmoney,authmevelocity"
+      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,grimac,placeholderapi,syncmoney,authmevelocity"
       PLUGINS: |
         https://zrips.net/Residence/download.php?file=Residence6.0.3.3.jar
         https://www.zrips.net/CMILib/CMILib1.6.0.1.jar 
+        https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
+        https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
       # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
@@ -93,9 +93,10 @@ services:
       VIEW_DISTANCE: "${PVP_VIEW_DISTANCE:-6}"
       SIMULATION_DISTANCE: "${PVP_SIM_DISTANCE:-4}"
       TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "luckperms,grimac,spark,placeholderapi,essentialsx,authmevelocity"
+      MODRINTH_PROJECTS: "luckperms,grimac,placeholderapi,authmevelocity"
       PLUGINS: |
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
+        https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
       # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
