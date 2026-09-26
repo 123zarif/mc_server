@@ -22,7 +22,7 @@ services:
   # 2. MINECRAFT BACKEND NODES
   # =================================================================
   mc-survival:
-    image: itzg/minecraft-server:java21
+    image: itzg/minecraft-server:java25
     container_name: mc-survival
     restart: unless-stopped
     stdin_open: true
@@ -50,7 +50,7 @@ services:
           memory: "${SURVIVAL_MEMORY_LIMIT:-12G}"
 
   mc-pvp:
-    image: itzg/minecraft-server:java21
+    image: itzg/minecraft-server:java25
     container_name: mc-pvp
     restart: unless-stopped
     stdin_open: true
