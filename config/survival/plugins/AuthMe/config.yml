@@ -453,14 +453,14 @@ Hooks:
     # Do we need to hook with multiverse for spawn checking?
     multiverse: true
     # Do we need to hook with BungeeCord?
-    bungeecord: false
+    bungeecord: true
     # Send player to this BungeeCord server after register/login
     sendPlayerTo: ""
     # Shared secret used to verify perform.login messages from the AuthMe proxy plugin.
     # Must match the proxySharedSecret value in your AuthMe Velocity or Bungee proxy config.
     # All backend servers must have the same value set here.
     # Leaving this empty disables auto-login: all perform.login messages will be rejected.
-    proxySharedSecret: ""
+    proxySharedSecret: "${CFG_FORWARDING_SECRET}"
     # Do we need to disable Essentials SocialSpy on join?
     disableSocialSpy: false
     # Do we need to force /motd Essentials command on join?

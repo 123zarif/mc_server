@@ -455,7 +455,7 @@ Hooks:
     # Do we need to hook with BungeeCord?
     bungeecord: true
     # Send player to this BungeeCord server after register/login
-    sendPlayerTo: ""
+    sendPlayerTo: "survival"
     # Shared secret used to verify perform.login messages from the AuthMe proxy plugin.
     # Must match the proxySharedSecret value in your AuthMe Velocity or Bungee proxy config.
     # All backend servers must have the same value set here.

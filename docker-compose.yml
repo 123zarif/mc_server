@@ -25,6 +25,8 @@ services:
     volumes:
       - proxy_data:/server
       - ./config/velocity/velocity.toml:/server/velocity.toml
+      - ./config/velocity/plugins/authmevelocity/config.conf:/server/plugins/authmevelocity/config.conf
+      - ./config/velocity/plugins/authmevelocity/config.conf:/server/plugins/AuthMeVelocity/config.conf
     networks:
       - internal_net
 
@@ -64,6 +66,8 @@ services:
       # Database variable injection
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
+      REPLACE_ENV_DURING_SYNC: "true"
+      SYNC_SKIP_NEWER_IN_DESTINATION: "false"
       CFG_DB_HOST: "postgres"
       CFG_DB_PORT: "5432"
       CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
