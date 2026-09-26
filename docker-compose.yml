@@ -42,7 +42,7 @@ services:
       EULA: "TRUE"
       TYPE: "${MC_TYPE:-PURPUR}"
       VERSION: "${MC_VERSION:-26.2}"
-      MEMORY: "${AUTH_MEMORY:-768M}"
+      MEMORY: "${AUTH_MEMORY:-512M}"
       ONLINE_MODE: "FALSE"
 
       # Disable all entity processing & ticking overhead
@@ -52,7 +52,8 @@ services:
       SPAWN_NPCS: "FALSE"
       ALLOW_NETHER: "FALSE"
       GENERATE_STRUCTURES: "FALSE"
-      LEVEL_TYPE: "flat"
+      LEVEL_TYPE: "minecraft:flat"
+      GENERATOR_SETTINGS: '{"layers":[{"block":"minecraft:bedrock","height":1}],"biome":"minecraft:the_void"}'
 
       # Plugins: Spigot Floodgate & AuthMe
       MODRINTH_PROJECTS: "placeholderapi,authmevelocity"
