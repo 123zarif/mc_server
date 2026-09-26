@@ -7,9 +7,6 @@
 # Minecraft Server Runtime Data (Keep repo clean)
 *-data/
 /data/
-/proxy-data/
-/survival-data/
-/pvp-data/
 *.jar
 *.log
 /logs/
