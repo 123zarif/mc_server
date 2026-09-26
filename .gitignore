@@ -1,0 +1,31 @@
+# Environment & Secrets (NEVER COMMIT THESE)
+.env
+*.env
+*.pem
+*.key
+
+# Minecraft Server Runtime Data (Keep repo clean)
+*-data/
+/data/
+/proxy-data/
+/survival-data/
+/pvp-data/
+*.jar
+*.log
+/logs/
+/crash-reports/
+
+# Rust Build Artifacts
+/rust-backend/target/
+
+# Node / Expo Artifacts
+/expo-app/node_modules/
+/expo-app/.expo/
+/expo-app/dist/
+/expo-app/web-build/
+.npm
+.yarn/
+
+# OS Specific
+.DS_Store
+Thumbs.db
