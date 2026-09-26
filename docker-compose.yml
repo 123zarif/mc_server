@@ -12,6 +12,8 @@ services:
     environment:
       TYPE: "VELOCITY"
       MEMORY: "${VELOCITY_MEMORY:-512M}"
+      TZ: "${TZ:-UTC}"
+      MINECRAFT_VERSION: "${MC_VERSION:-26.2}"
       MODRINTH_PROJECTS: "geyser,velocitab,authmevelocity"
       PLUGINS: "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity"
       REPLACE_ENV_VARIABLES: "true"
@@ -44,7 +46,7 @@ services:
       ONLINE_MODE: "FALSE"
       DIFFICULTY: "${MC_DIFFICULTY:-hard}"
       TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,grimac:alpha,placeholderapi,syncmoney,authmevelocity"
+      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,placeholderapi,syncmoney,authmevelocity"
       PLUGINS: |
         https://zrips.net/Residence/download.php?file=Residence6.0.3.3.jar
         https://www.zrips.net/CMILib/CMILib1.6.0.1.jar 
@@ -52,6 +54,7 @@ services:
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
+        https://cdn.modrinth.com/data/LJNGWSvH/versions/Gd6BG1HA/grimac-bukkit-2.3.74-8eb5f28.jar
       # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
@@ -93,11 +96,12 @@ services:
       VIEW_DISTANCE: "${PVP_VIEW_DISTANCE:-6}"
       SIMULATION_DISTANCE: "${PVP_SIM_DISTANCE:-4}"
       TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "luckperms,grimac:alpha,placeholderapi,authmevelocity"
+      MODRINTH_PROJECTS: "luckperms,placeholderapi,authmevelocity"
       PLUGINS: |
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
+        https://cdn.modrinth.com/data/LJNGWSvH/versions/Gd6BG1HA/grimac-bukkit-2.3.74-8eb5f28.jar
       # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
