@@ -1,19 +1,64 @@
+# ===================================================================
 # Environment & Secrets (NEVER COMMIT THESE)
+# ===================================================================
 .env
 *.env
 *.pem
 *.key
+forwarding.secret
 
-# Minecraft Server Runtime Data (Keep repo clean)
-/data/
+# ===================================================================
+# Jar Handling: Ignore Server Binaries, Allow Plugin Jars
+# ===================================================================
+# 1. Ignore all .jar files everywhere by default (purpur.jar, velocity.jar, libraries)
+*.jar
+
+# 2. Whitelist plugin .jar files
+!**/plugins/*.jar
+!**/plugins/**/*.jar
+
+# ===================================================================
+# Minecraft Server Runtime Bloat (Keep repo clean)
+# ===================================================================
 *.log
+*.log.gz
 /logs/
 /crash-reports/
+/cache/
+/libraries/
+/versions/
+.paper-remapped/
 
+# Ignore heavy world chunks and player states
+**/world/
+**/world_nether/
+**/world_the_end/
+**/playerdata/
+**/stats/
+**/region/
+**/entities/
+**/poi/
+
+# ===================================================================
+# Plugin Runtime Data (Allow configs, ignore player/db bloat)
+# ===================================================================
+# Plugins write SQLite databases, backups, and user states inside their folders
+**/plugins/**/userdata/
+**/plugins/**/playerdata/
+**/plugins/**/backups/
+**/plugins/**/cache/
+**/plugins/**/*.db
+**/plugins/**/*.sqlite
+**/plugins/**/*.sqlite3
+
+# ===================================================================
 # Rust Build Artifacts
+# ===================================================================
 /rust-backend/target/
 
+# ===================================================================
 # Node / Expo Artifacts
+# ===================================================================
 /expo-app/node_modules/
 /expo-app/.expo/
 /expo-app/dist/
@@ -21,6 +66,8 @@
 .npm
 .yarn/
 
+# ===================================================================
 # OS Specific
+# ===================================================================
 .DS_Store
 Thumbs.db
