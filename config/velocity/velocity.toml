@@ -11,7 +11,7 @@ force-key-authentication = false
 prevent-client-proxy-connections = false
 # Player Information Forwarding: modern (with forwarding-secret)
 player-info-forwarding-mode = "modern"
-forwarding-secret = "ChangeThisToAStrongRandomSecretKey123456"
+forwarding-secret-file = "forwarding.secret"
 # Announce whether or not your server supports Forge. If you run a modded server, we
 # suggest turning this on.
 #
@@ -23,55 +23,55 @@ enable-player-address-logging = true
 forced-hosts = {}
 
 [servers]
-	auth = "mc-auth:25565"
-	survival = "mc-survival:25565"
-	pvp = "mc-pvp:25565"
-	# Fallback sequence when players connect
-	try = ["auth"]
+auth = "mc-auth:25565"
+survival = "mc-survival:25565"
+pvp = "mc-pvp:25565"
+# Fallback sequence when players connect
+try = ["auth"]
 
 # "survival.example.com" = [ "survival" ]
 # "pvp.example.com" = [ "pvp" ]
 [advanced]
-	compression-threshold = 256
-	compression-level = -1
-	login-ratelimit = 3000
-	connection-timeout = 5000
-	read-timeout = 30000
-	haproxy-protocol = false
-	tcp-fast-open = true
-	bungee-plugin-message-channel = true
-	show-ping-requests = false
-	failover-on-unexpected-server-disconnect = true
-	announce-proxy-commands = true
-	log-command-executions = false
+compression-threshold = 256
+compression-level = -1
+login-ratelimit = 3000
+connection-timeout = 5000
+read-timeout = 30000
+haproxy-protocol = false
+tcp-fast-open = true
+bungee-plugin-message-channel = true
+show-ping-requests = false
+failover-on-unexpected-server-disconnect = true
+announce-proxy-commands = true
+log-command-executions = false
 
 [query]
-	enabled = false
-	port = 25577
-	map = "Velocity"
-	show-plugins = false
+enabled = false
+port = 25577
+map = "Velocity"
+show-plugins = false
 
 [packet-limiter]
-	#Size of the moving time window in seconds used to calculate average rates.
-	#A larger window tolerates short bursts while still enforcing the configured limits over time.
-	interval = 7
-	#Maximum average number of packets per second a client may send. -1 disables this check.
-	packets-per-second = -1
-	#Maximum average number of compressed (on-wire) bytes per second a client may send. -1 disables this check.
-	bytes-per-second = -1
-	#Maximum average number of decompressed bytes per second a client may send.
-	#Protects against compression bomb attacks where small packets expand to excessive sizes after decompression.
-	#-1 disables this check.
-	decompressed-bytes-per-second = 5242880
+#Size of the moving time window in seconds used to calculate average rates.
+#A larger window tolerates short bursts while still enforcing the configured limits over time.
+interval = 7
+#Maximum average number of packets per second a client may send. -1 disables this check.
+packets-per-second = -1
+#Maximum average number of compressed (on-wire) bytes per second a client may send. -1 disables this check.
+bytes-per-second = -1
+#Maximum average number of decompressed bytes per second a client may send.
+#Protects against compression bomb attacks where small packets expand to excessive sizes after decompression.
+#-1 disables this check.
+decompressed-bytes-per-second = 5242880
 
 [ping-passthrough]
-	# Should Velocity pass the version number from the backend server when responding to server list ping requests?
-	version = false
-	# Should Velocity pass the player count from the backend server when responding to server list ping requests?
-	players = false
-	# Should Velocity pass the description from the backend server when responding to server list ping requests?
-	description = false
-	# Should Velocity pass the favicon (also known as the server icon) from the backend server when responding to server list ping requests?
-	favicon = false
-	# Should Velocity pass the mod list from the backend server when responding to server list ping requests?
-	modinfo = false
+# Should Velocity pass the version number from the backend server when responding to server list ping requests?
+version = false
+# Should Velocity pass the player count from the backend server when responding to server list ping requests?
+players = false
+# Should Velocity pass the description from the backend server when responding to server list ping requests?
+description = false
+# Should Velocity pass the favicon (also known as the server icon) from the backend server when responding to server list ping requests?
+favicon = false
+# Should Velocity pass the mod list from the backend server when responding to server list ping requests?
+modinfo = false
