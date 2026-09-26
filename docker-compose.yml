@@ -44,7 +44,7 @@ services:
       ONLINE_MODE: "FALSE"
       DIFFICULTY: "${MC_DIFFICULTY:-hard}"
       TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,grimac,placeholderapi,syncmoney,authmevelocity"
+      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,grimac:alpha,placeholderapi,syncmoney,authmevelocity"
       PLUGINS: |
         https://zrips.net/Residence/download.php?file=Residence6.0.3.3.jar
         https://www.zrips.net/CMILib/CMILib1.6.0.1.jar 
@@ -93,7 +93,7 @@ services:
       VIEW_DISTANCE: "${PVP_VIEW_DISTANCE:-6}"
       SIMULATION_DISTANCE: "${PVP_SIM_DISTANCE:-4}"
       TZ: "${TZ:-UTC}"
-      MODRINTH_PROJECTS: "luckperms,grimac,placeholderapi,authmevelocity"
+      MODRINTH_PROJECTS: "luckperms,grimac:alpha,placeholderapi,authmevelocity"
       PLUGINS: |
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
