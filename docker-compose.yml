@@ -13,9 +13,11 @@ services:
       TYPE: "VELOCITY"
       MEMORY: "${VELOCITY_MEMORY:-512M}"
       TZ: "${TZ:-UTC}"
-      MINECRAFT_VERSION: "${MC_VERSION:-26.2}"
-      MODRINTH_PROJECTS: "geyser,velocitab,authmevelocity"
-      PLUGINS: "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity"
+      PLUGINS: |
+        https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/velocity
+        https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity
+        https://cdn.modrinth.com/data/Q10irTG0/versions/7gyD0ard/Velocitab-1.7.11-b34b3ec.jar
+        https://cdn.modrinth.com/data/sG6SrXta/versions/1Gy7jBHC/AuthMeVelocity-Velocity-4.3.0.jar
       REPLACE_ENV_VARIABLES: "true"
       REPLACE_ENV_VARIABLE_PREFIX: "CFG_"
       CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
