@@ -20,11 +20,11 @@ services:
         https://cdn.modrinth.com/data/sG6SrXta/versions/1Gy7jBHC/AuthMeVelocity-Velocity-4.3.0.jar
       REPLACE_ENV_VARIABLES: "true"
       ENV_VARIABLE_PREFIX: "CFG_"
-      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+      FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
       CFG_PROXY_MOTD: "${PROXY_MOTD:-Welcome to our Minecraft Network!}"
     volumes:
       - proxy_data:/server
-      - ./config/velocity/velocity.toml:/server/velocity.toml:ro
+      - ./config/velocity/velocity.toml:/server/velocity.toml
     networks:
       - internal_net
 
