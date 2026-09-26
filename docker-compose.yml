@@ -19,26 +19,30 @@ services:
         https://cdn.modrinth.com/data/Q10irTG0/versions/7gyD0ard/Velocitab-1.7.11-b34b3ec.jar
         https://cdn.modrinth.com/data/sG6SrXta/versions/1Gy7jBHC/AuthMeVelocity-Velocity-4.3.0.jar
       REPLACE_ENV_VARIABLES: "true"
-      REPLACE_ENV_VARIABLE_PREFIX: "CFG_"
+      ENV_VARIABLE_PREFIX: "CFG_"
       CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
       CFG_PROXY_MOTD: "${PROXY_MOTD:-Welcome to our Minecraft Network!}"
     volumes:
-      - ./proxy-data:/server
-      - ./config/velocity/velocity.toml:/server/velocity.toml
+      - proxy_data:/server
+      - ./config/velocity/velocity.toml:/server/velocity.toml:ro
     networks:
       - internal_net
 
-  # Server Authentication and Stuff...
-
+  # =================================================================
+  # 2. AUTHENTICATION GATEWAY (LOW-SPEC PURPUR)
+  # =================================================================
   mc-auth:
     image: itzg/minecraft-server:java25
     container_name: mc-auth
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_started
     environment:
       EULA: "TRUE"
-      TYPE: "PURPUR"
-      VERSION: "26.2"
-      MEMORY: "768M" # Capped low - 768M is plenty
+      TYPE: "${MC_TYPE:-PURPUR}"
+      VERSION: "${MC_VERSION:-26.2}"
+      MEMORY: "${AUTH_MEMORY:-768M}"
       ONLINE_MODE: "FALSE"
 
       # Disable all entity processing & ticking overhead
@@ -50,29 +54,29 @@ services:
       GENERATE_STRUCTURES: "FALSE"
       LEVEL_TYPE: "flat"
 
-      # Only 2 plugins: Floodgate & AuthMe
+      # Plugins: Spigot Floodgate & AuthMe
       MODRINTH_PROJECTS: "placeholderapi,authmevelocity"
       PLUGINS: |
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
-        https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity
+        https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot
 
-      # Share the database env variables for AuthMe
+      # Database variable injection
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
       CFG_DB_HOST: "postgres"
       CFG_DB_PORT: "5432"
-      CFG_DB_USER: "${POSTGRES_USER}"
+      CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
       CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
-      CFG_DB_NAME: "${POSTGRES_DB}"
-
+      CFG_DB_NAME: "${POSTGRES_DB:-mc_network}"
+      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
     volumes:
       - auth_data:/data
-      - ./templates/auth:/config:ro
+      - ./config/auth:/config:ro
     networks:
       - internal_net
 
   # =================================================================
-  # 2. MINECRAFT BACKEND NODES
+  # 3. MINECRAFT BACKEND NODES
   # =================================================================
   mc-survival:
     image: itzg/minecraft-server:java25
@@ -80,12 +84,17 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
     ports:
       - "${VOICE_CHAT_PORT:-24454}:24454/udp"
     environment:
       EULA: "TRUE"
       TYPE: "${MC_TYPE:-PURPUR}"
-      VERSION: "${MC_VERSION:-LATEST}"
+      VERSION: "${MC_VERSION:-26.2}"
       MEMORY: "${SURVIVAL_MEMORY:-10G}"
       USE_AIKAR_FLAGS: "true"
       ONLINE_MODE: "FALSE"
@@ -94,12 +103,13 @@ services:
       MODRINTH_PROJECTS: "luckperms,chunky,squaremap,placeholderapi,syncmoney,authmevelocity"
       PLUGINS: |
         https://zrips.net/Residence/download.php?file=Residence6.0.3.3.jar
-        https://www.zrips.net/CMILib/CMILib1.6.0.1.jar 
+        https://www.zrips.net/CMILib/CMILib1.6.0.1.jar
         https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
         https://cdn.modrinth.com/data/LJNGWSvH/versions/Gd6BG1HA/grimac-bukkit-2.3.74-8eb5f28.jar
+
       # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
@@ -115,7 +125,7 @@ services:
       CFG_REDIS_HOST: "redis"
       CFG_REDIS_PORT: "6379"
     volumes:
-      - ./survival-data:/data
+      - survival_data:/data
       - ./config/survival:/config:ro
     networks:
       - internal_net
@@ -130,10 +140,15 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
     environment:
       EULA: "TRUE"
       TYPE: "${MC_TYPE:-PURPUR}"
-      VERSION: "${MC_VERSION:-LATEST}"
+      VERSION: "${MC_VERSION:-26.2}"
       MEMORY: "${PVP_MEMORY:-3G}"
       USE_AIKAR_FLAGS: "true"
       ONLINE_MODE: "FALSE"
@@ -147,6 +162,7 @@ services:
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
         https://cdn.modrinth.com/data/LJNGWSvH/versions/Gd6BG1HA/grimac-bukkit-2.3.74-8eb5f28.jar
+
       # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
@@ -162,7 +178,7 @@ services:
       CFG_REDIS_HOST: "redis"
       CFG_REDIS_PORT: "6379"
     volumes:
-      - ./pvp-data:/data
+      - pvp_data:/data
       - ./config/pvp:/config:ro
     networks:
       - internal_net
@@ -172,7 +188,7 @@ services:
           memory: "${PVP_MEMORY_LIMIT:-4G}"
 
   # =================================================================
-  # 3. PERSISTENCE & CACHING LAYER
+  # 4. PERSISTENCE & CACHING LAYER
   # =================================================================
   postgres:
     image: postgres:16-alpine
@@ -206,53 +222,6 @@ services:
         limits:
           memory: 512M
 
-  # # =================================================================
-  # # 4. RUST SERVICE (Axum API + Discord Bot)
-  # # =================================================================
-  # rust-backend:
-  #   build:
-  #     context: ./rust-backend
-  #     dockerfile: Dockerfile
-  #   container_name: mc-rust-backend
-  #   restart: unless-stopped
-  #   environment:
-  #     DISCORD_TOKEN: "${DISCORD_TOKEN:?Set DISCORD_TOKEN in .env}"
-  #     DATABASE_URL: "postgresql://${POSTGRES_USER:-mc_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mc_network}"
-  #     REDIS_URL: "redis://redis:6379"
-  #     MINECRAFT_HOST: "mc-survival"
-  #     TZ: "${TZ:-UTC}"
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #   networks:
-  #     - internal_net
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 256M
-
-  # # =================================================================
-  # # 5. WEB GATEWAY (Caddy)
-  # # =================================================================
-  # web:
-  #   image: caddy:alpine
-  #   container_name: mc-web
-  #   restart: unless-stopped
-  #   ports:
-  #     - "${HTTP_PORT:-80}:80"
-  #     - "${HTTPS_PORT:-443}:443"
-  #   volumes:
-  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
-  #     - ./expo-app/dist:/srv:ro
-  #   depends_on:
-  #     - rust-backend
-  #   networks:
-  #     - internal_net
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 128M
-
 # ===================================================================
 # NETWORKS & VOLUMES
 # ===================================================================
@@ -266,3 +235,4 @@ volumes:
   pvp_data:
   proxy_data:
   postgres_data:
+  redis_data:
