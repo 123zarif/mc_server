@@ -28,6 +28,49 @@ services:
     networks:
       - internal_net
 
+  # Server Authentication and Stuff...
+
+  mc-auth:
+    image: itzg/minecraft-server:java25
+    container_name: mc-auth
+    restart: unless-stopped
+    environment:
+      EULA: "TRUE"
+      TYPE: "PURPUR"
+      VERSION: "26.2"
+      MEMORY: "768M" # Capped low - 768M is plenty
+      ONLINE_MODE: "FALSE"
+
+      # Disable all entity processing & ticking overhead
+      VIEW_DISTANCE: 2
+      SPAWN_MONSTERS: "FALSE"
+      SPAWN_ANIMALS: "FALSE"
+      SPAWN_NPCS: "FALSE"
+      ALLOW_NETHER: "FALSE"
+      GENERATE_STRUCTURES: "FALSE"
+      LEVEL_TYPE: "flat"
+
+      # Only 2 plugins: Floodgate & AuthMe
+      MODRINTH_PROJECTS: "placeholderapi,authmevelocity"
+      PLUGINS: |
+        https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
+        https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity
+
+      # Share the database env variables for AuthMe
+      REPLACE_ENV_VARIABLES: "TRUE"
+      ENV_VARIABLE_PREFIX: "CFG_"
+      CFG_DB_HOST: "postgres"
+      CFG_DB_PORT: "5432"
+      CFG_DB_USER: "${POSTGRES_USER}"
+      CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      CFG_DB_NAME: "${POSTGRES_DB}"
+
+    volumes:
+      - auth_data:/data
+      - ./templates/auth:/config:ro
+    networks:
+      - internal_net
+
   # =================================================================
   # 2. MINECRAFT BACKEND NODES
   # =================================================================
@@ -218,5 +261,8 @@ networks:
     driver: bridge
 
 volumes:
+  auth_data:
+  survival_data:
+  pvp_data:
+  proxy_data:
   postgres_data:
-  redis_data:

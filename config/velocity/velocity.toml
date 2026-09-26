@@ -20,11 +20,12 @@ ping-passthrough = "DISABLED"
 enable-player-address-logging = true
 
 [servers]
+auth = "mc-auth:25565"
 survival = "mc-survival:25565"
 pvp = "mc-pvp:25565"
 
 # Fallback sequence when players connect
-try = ["survival", "pvp"]
+try = ["auth"]
 
 [forced-hosts]
 # "survival.example.com" = [ "survival" ]
