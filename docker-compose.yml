@@ -13,8 +13,15 @@ services:
       TYPE: "VELOCITY"
       MEMORY: "${VELOCITY_MEMORY:-512M}"
       TZ: "${TZ:-UTC}"
+      MODRINTH_PROJECTS: "geyser,floodgate,velocitab"
+      PLUGINS: "https://github.com/AuthMe/AuthMeVelocity/releases/download/4.3.0/AuthMeVelocity-Velocity-4.3.0.jar"
+      REPLACE_ENV_VARIABLES: "true"
+      REPLACE_ENV_VARIABLE_PREFIX: "CFG_"
+      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+      CFG_PROXY_MOTD: "${PROXY_MOTD:-Welcome to our Minecraft Network!}"
     volumes:
       - ./proxy-data:/server
+      - ./config/velocity/velocity.toml:/server/velocity.toml
     networks:
       - internal_net
 
@@ -40,8 +47,29 @@ services:
       VIEW_DISTANCE: "${SURVIVAL_VIEW_DISTANCE:-8}"
       SIMULATION_DISTANCE: "${SURVIVAL_SIM_DISTANCE:-6}"
       TZ: "${TZ:-UTC}"
+      MODRINTH_PROJECTS: "luckperms,chunky,squaremap,grimac,spark,placeholderapi,floodgate,essentialsx,syncmoney"
+      SPIGET_RESOURCES: "87610,11480"
+      PLUGINS: |
+        https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
+        https://github.com/AuthMe/AuthMeVelocity/releases/download/4.3.0/AuthMeVelocity-Paper-4.3.0.jar
+        https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
+      # Config template synchronization and variable replacement
+      REPLACE_ENV_VARIABLES: "TRUE"
+      ENV_VARIABLE_PREFIX: "CFG_"
+      REPLACE_ENV_DURING_SYNC: "true"
+      SYNC_SKIP_NEWER_IN_DESTINATION: "false"
+      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+      CFG_SURVIVAL_MOTD: "${SURVIVAL_MOTD:-Custom Survival Network}"
+      CFG_DB_HOST: "postgres"
+      CFG_DB_PORT: "5432"
+      CFG_DB_NAME: "${POSTGRES_DB:-mc_network}"
+      CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
+      CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      CFG_REDIS_HOST: "redis"
+      CFG_REDIS_PORT: "6379"
     volumes:
       - ./survival-data:/data
+      - ./config/survival:/config:ro
     networks:
       - internal_net
     deploy:
@@ -66,8 +94,28 @@ services:
       VIEW_DISTANCE: "${PVP_VIEW_DISTANCE:-6}"
       SIMULATION_DISTANCE: "${PVP_SIM_DISTANCE:-4}"
       TZ: "${TZ:-UTC}"
+      MODRINTH_PROJECTS: "luckperms,grimac,spark,placeholderapi,essentialsx"
+      PLUGINS: |
+        https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
+        https://github.com/AuthMe/AuthMeVelocity/releases/download/4.3.0/AuthMeVelocity-Paper-4.3.0.jar
+        https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
+      # Config template synchronization and variable replacement
+      REPLACE_ENV_VARIABLES: "TRUE"
+      ENV_VARIABLE_PREFIX: "CFG_"
+      REPLACE_ENV_DURING_SYNC: "true"
+      SYNC_SKIP_NEWER_IN_DESTINATION: "false"
+      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+      CFG_PVP_MOTD: "${PVP_MOTD:-Custom PvP Arena}"
+      CFG_DB_HOST: "postgres"
+      CFG_DB_PORT: "5432"
+      CFG_DB_NAME: "${POSTGRES_DB:-mc_network}"
+      CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
+      CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      CFG_REDIS_HOST: "redis"
+      CFG_REDIS_PORT: "6379"
     volumes:
       - ./pvp-data:/data
+      - ./config/pvp:/config:ro
     networks:
       - internal_net
     deploy:

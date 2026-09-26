@@ -8,26 +8,44 @@
 forwarding.secret
 
 # ===================================================================
-# Jar Handling: Ignore Server Binaries, Allow Plugin Jars
+# Jar Handling: Ignore all .jar files everywhere (auto-downloaded)
 # ===================================================================
-# 1. Ignore all .jar files everywhere by default (purpur.jar, velocity.jar, libraries)
 *.jar
+**/*.jar
 
-# 2. Whitelist plugin .jar files
-!**/plugins/*.jar
-!**/plugins/**/*.jar
+# ===================================================================
+# Disposable Runtime Server Data Volumes (Templates live in config/)
+# ===================================================================
+/survival-data/
+/pvp-data/
+/proxy-data/
 
 # ===================================================================
 # Minecraft Server Runtime Bloat (Keep repo clean)
 # ===================================================================
 *.log
 *.log.gz
-/logs/
-/crash-reports/
-/cache/
-/libraries/
-/versions/
-.paper-remapped/
+**/logs/
+**/crash-reports/
+**/cache/
+**/libraries/
+**/versions/
+**/.paper-remapped/
+**/.paper/
+**/.purpur-manifest.json
+**/.papermc-manifest.json
+**/.rcon-cli.yaml
+**/.rcon-cli.env
+**/.purpur.env
+**/.results.env
+**/eula.txt
+
+# Server player cache & access lists
+**/usercache.json
+**/banned-ips.json
+**/banned-players.json
+**/ops.json
+**/whitelist.json
 
 # Ignore heavy world chunks and player states
 **/world/
@@ -46,10 +64,19 @@ forwarding.secret
 **/plugins/**/userdata/
 **/plugins/**/playerdata/
 **/plugins/**/backups/
+**/plugins/**/Backup/
+**/plugins/**/Save/
+**/plugins/**/Saves/
 **/plugins/**/cache/
+**/plugins/**/tmp/
+**/plugins/**/lib/
+**/plugins/**/data/
 **/plugins/**/*.db
 **/plugins/**/*.sqlite
 **/plugins/**/*.sqlite3
+**/plugins/**/*.bin
+**/plugins/Essentials/upgrades-done.yml
+**/plugins/squaremap/web/tiles/
 
 # ===================================================================
 # Rust Build Artifacts
