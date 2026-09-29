@@ -71,8 +71,7 @@ services:
       GENERATE_STRUCTURES: "FALSE"
 
       LEVEL_TYPE: "minecraft:flat"
-      GENERATOR_SETTINGS: '{"layers":[{"block":"minecraft:bedrock","height":1}],"biome":"minecraft:the_void"}'
-
+      GENERATOR_SETTINGS: '{"layers":[{"block":"minecraft:air","height":1}],"biome":"minecraft:the_void","features":false,"lakes":false,"structure_overrides":[]}'
       MODRINTH_PROJECTS: "placeholderapi"
 
       PLUGINS: |
