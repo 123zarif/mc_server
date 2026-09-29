@@ -1,115 +1,150 @@
 services:
   # =================================================================
-  # 1. GATEWAY & PROXY LAYER
+  # 1. VELOCITY PROXY
   # =================================================================
   velocity:
     image: itzg/mc-proxy:latest
     container_name: mc-velocity
     restart: unless-stopped
+
     ports:
       - "${MINECRAFT_JAVA_PORT:-25565}:25577"
       - "${MINECRAFT_BEDROCK_PORT:-19132}:${MINECRAFT_BEDROCK_PORT:-19132}/udp"
+
     environment:
       TYPE: "VELOCITY"
       MEMORY: "${VELOCITY_MEMORY:-512M}"
       TZ: "${TZ:-UTC}"
+
       PLUGINS: |
         https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/velocity
         https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/velocity
         https://cdn.modrinth.com/data/Q10irTG0/versions/7gyD0ard/Velocitab-1.7.11-b34b3ec.jar
         https://cdn.modrinth.com/data/sG6SrXta/versions/1Gy7jBHC/AuthMeVelocity-Velocity-4.3.0.jar
+
+      VELOCITY_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+
       REPLACE_ENV_VARIABLES: "true"
       ENV_VARIABLE_PREFIX: "CFG_"
-      FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+
       CFG_PROXY_MOTD: "${PROXY_MOTD:-Welcome to our Minecraft Network!}"
+
     volumes:
       - proxy_data:/server
-      - ./config/velocity/velocity.toml:/server/velocity.toml
-      - ./config/velocity/plugins/authmevelocity/config.conf:/server/plugins/authmevelocity/config.conf
-      - ./config/velocity/plugins/authmevelocity/config.conf:/server/plugins/AuthMeVelocity/config.conf
+      - ./config/velocity/velocity.toml:/config/velocity.toml:ro
+      - ./config/velocity/plugins:/config/plugins:ro
+
     networks:
       - internal_net
 
+
   # =================================================================
-  # 2. AUTHENTICATION GATEWAY (LOW-SPEC PURPUR)
+  # 2. AUTHENTICATION GATEWAY
   # =================================================================
   mc-auth:
     image: itzg/minecraft-server:java25
     container_name: mc-auth
     restart: unless-stopped
+
     depends_on:
       postgres:
         condition: service_started
+
     environment:
       EULA: "TRUE"
+
       TYPE: "${MC_TYPE:-PURPUR}"
       VERSION: "${MC_VERSION:-26.2}"
       MEMORY: "${AUTH_MEMORY:-512M}"
+      TZ: "${TZ:-UTC}"
+
       ONLINE_MODE: "FALSE"
 
-      # Disable all entity processing & ticking overhead
       VIEW_DISTANCE: 2
+      SIMULATION_DISTANCE: 2
+
       SPAWN_MONSTERS: "FALSE"
       SPAWN_ANIMALS: "FALSE"
       SPAWN_NPCS: "FALSE"
+
       ALLOW_NETHER: "FALSE"
       GENERATE_STRUCTURES: "FALSE"
+
       LEVEL_TYPE: "minecraft:flat"
       GENERATOR_SETTINGS: '{"layers":[{"block":"minecraft:bedrock","height":1}],"biome":"minecraft:the_void"}'
 
-      # Plugins: Spigot Floodgate & AuthMe
       MODRINTH_PROJECTS: "placeholderapi"
+
       PLUGINS: |
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/4drian3d/AuthMeVelocity/releases/download/4.3.0/AuthMeVelocity-Paper-4.3.0.jar
         https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot
 
-      # Database variable injection
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
       REPLACE_ENV_DURING_SYNC: "true"
       SYNC_SKIP_NEWER_IN_DESTINATION: "false"
+
+      COPY_CONFIG_DEST: "/data"
+
+      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+
       CFG_DB_HOST: "postgres"
       CFG_DB_PORT: "5432"
       CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
       CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
       CFG_DB_NAME: "${POSTGRES_DB:-mc_network}"
-      CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+
     volumes:
       - auth_data:/data
       - ./config/auth:/config:ro
+
     networks:
       - internal_net
 
+
   # =================================================================
-  # 3. MINECRAFT BACKEND NODES
+  # 3. SURVIVAL SERVER
   # =================================================================
   mc-survival:
     image: itzg/minecraft-server:java25
     container_name: mc-survival
     restart: unless-stopped
+
     stdin_open: true
     tty: true
+
     depends_on:
       postgres:
         condition: service_started
       redis:
         condition: service_started
+
     ports:
       - "${VOICE_CHAT_PORT:-24454}:24454/udp"
+
     environment:
       EULA: "TRUE"
+
       TYPE: "${MC_TYPE:-PURPUR}"
       VERSION: "${MC_VERSION:-26.2}"
       MEMORY: "${SURVIVAL_MEMORY:-10G}"
       USE_AIKAR_FLAGS: "true"
-      ONLINE_MODE: "FALSE"
-      DIFFICULTY: "${MC_DIFFICULTY:-hard}"
       TZ: "${TZ:-UTC}"
+
+      ONLINE_MODE: "FALSE"
+
+      DIFFICULTY: "${MC_DIFFICULTY:-hard}"
+
+      VIEW_DISTANCE: "${SURVIVAL_VIEW_DISTANCE:-8}"
+      SIMULATION_DISTANCE: "${SURVIVAL_SIM_DISTANCE:-6}"
+
       MODRINTH_PROJECTS: "luckperms,chunky,squaremap,placeholderapi,syncmoney"
+
       PLUGINS: |
         https://zrips.net/Residence/download.php?file=Residence6.0.3.3.jar
         https://www.zrips.net/CMILib/CMILib1.6.0.1.jar
+        https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot
         https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/4drian3d/AuthMeVelocity/releases/download/4.3.0/AuthMeVelocity-Paper-4.3.0.jar
@@ -117,53 +152,73 @@ services:
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
         https://cdn.modrinth.com/data/LJNGWSvH/versions/Gd6BG1HA/grimac-bukkit-2.3.74-8eb5f28.jar
 
-      # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
       REPLACE_ENV_DURING_SYNC: "true"
       SYNC_SKIP_NEWER_IN_DESTINATION: "false"
+
+      COPY_CONFIG_DEST: "/data"
+
       CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+
       CFG_SURVIVAL_MOTD: "${SURVIVAL_MOTD:-Custom Survival Network}"
+
       CFG_DB_HOST: "postgres"
       CFG_DB_PORT: "5432"
       CFG_DB_NAME: "${POSTGRES_DB:-mc_network}"
       CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
       CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+
       CFG_REDIS_HOST: "redis"
       CFG_REDIS_PORT: "6379"
+
     volumes:
       - survival_data:/data
       - ./config/survival:/config:ro
+
     networks:
       - internal_net
+
     deploy:
       resources:
         limits:
           memory: "${SURVIVAL_MEMORY_LIMIT:-12G}"
 
+
+  # =================================================================
+  # 4. PVP SERVER
+  # =================================================================
   mc-pvp:
     image: itzg/minecraft-server:java25
     container_name: mc-pvp
     restart: unless-stopped
+
     stdin_open: true
     tty: true
+
     depends_on:
       postgres:
         condition: service_started
       redis:
         condition: service_started
+
     environment:
       EULA: "TRUE"
+
       TYPE: "${MC_TYPE:-PURPUR}"
       VERSION: "${MC_VERSION:-26.2}"
       MEMORY: "${PVP_MEMORY:-3G}"
       USE_AIKAR_FLAGS: "true"
+      TZ: "${TZ:-UTC}"
+
       ONLINE_MODE: "FALSE"
+
       DIFFICULTY: "${MC_DIFFICULTY:-hard}"
       VIEW_DISTANCE: "${PVP_VIEW_DISTANCE:-6}"
       SIMULATION_DISTANCE: "${PVP_SIM_DISTANCE:-4}"
-      TZ: "${TZ:-UTC}"
+
       MODRINTH_PROJECTS: "luckperms,placeholderapi"
+
       PLUGINS: |
         https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Spigot-1.21.jar
         https://github.com/4drian3d/AuthMeVelocity/releases/download/4.3.0/AuthMeVelocity-Paper-4.3.0.jar
@@ -171,72 +226,96 @@ services:
         https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar
         https://cdn.modrinth.com/data/LJNGWSvH/versions/Gd6BG1HA/grimac-bukkit-2.3.74-8eb5f28.jar
 
-      # Config template synchronization and variable replacement
       REPLACE_ENV_VARIABLES: "TRUE"
       ENV_VARIABLE_PREFIX: "CFG_"
       REPLACE_ENV_DURING_SYNC: "true"
       SYNC_SKIP_NEWER_IN_DESTINATION: "false"
+
+      COPY_CONFIG_DEST: "/data"
+
       CFG_FORWARDING_SECRET: "${FORWARDING_SECRET:?Set FORWARDING_SECRET in .env}"
+
       CFG_PVP_MOTD: "${PVP_MOTD:-Custom PvP Arena}"
+
       CFG_DB_HOST: "postgres"
       CFG_DB_PORT: "5432"
       CFG_DB_NAME: "${POSTGRES_DB:-mc_network}"
       CFG_DB_USER: "${POSTGRES_USER:-mc_admin}"
       CFG_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+
       CFG_REDIS_HOST: "redis"
       CFG_REDIS_PORT: "6379"
+
     volumes:
       - pvp_data:/data
       - ./config/pvp:/config:ro
+
     networks:
       - internal_net
-    deploy:
-      resources:
-        limits:
-          memory: "${PVP_MEMORY_LIMIT:-4G}"
+
 
   # =================================================================
-  # 4. PERSISTENCE & CACHING LAYER
+  # 5. POSTGRES
   # =================================================================
   postgres:
     image: postgres:16-alpine
     container_name: mc-postgres
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: "${POSTGRES_DB:-mc_network}"
       POSTGRES_USER: "${POSTGRES_USER:-mc_admin}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
       TZ: "${TZ:-UTC}"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     networks:
       - internal_net
+
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: "1G"
 
+
+  # =================================================================
+  # 6. REDIS
+  # =================================================================
   redis:
     image: redis:7-alpine
     container_name: mc-redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
     volumes:
       - redis_data:/data
+
     networks:
       - internal_net
+
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: "512M"
+
 
 # ===================================================================
-# NETWORKS & VOLUMES
+# NETWORKS
 # ===================================================================
 networks:
   internal_net:
     driver: bridge
 
+
+# ===================================================================
+# VOLUMES
+# ===================================================================
 volumes:
   auth_data:
   survival_data:
@@ -244,3 +323,4 @@ volumes:
   proxy_data:
   postgres_data:
   redis_data:
+
