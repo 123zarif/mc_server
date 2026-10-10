@@ -37,7 +37,6 @@ services:
     networks:
       - internal_net
 
-
   # =================================================================
   # 2. AUTHENTICATION GATEWAY
   # =================================================================
@@ -52,6 +51,9 @@ services:
 
     environment:
       EULA: "TRUE"
+
+      MODE: adventure
+      FORCE_GAMEMODE: "true"
 
       TYPE: "${MC_TYPE:-PURPUR}"
       VERSION: "${MC_VERSION:-26.2}"
@@ -70,8 +72,9 @@ services:
       ALLOW_NETHER: "FALSE"
       GENERATE_STRUCTURES: "FALSE"
 
-      LEVEL_TYPE: "minecraft:flat"
-      GENERATOR_SETTINGS: '{"layers":[{"block":"minecraft:air","height":1}],"biome":"minecraft:the_void","features":false,"lakes":false,"structure_overrides":[]}'
+      LEVEL: "world"
+      WORLD: "/world-template"
+
       MODRINTH_PROJECTS: "placeholderapi"
 
       PLUGINS: |
@@ -97,10 +100,10 @@ services:
     volumes:
       - auth_data:/data
       - ./config/auth:/config:ro
+      - ./config/auth/world-template:/world-template:ro
 
     networks:
       - internal_net
-
 
   # =================================================================
   # 3. SURVIVAL SERVER
@@ -183,7 +186,6 @@ services:
         limits:
           memory: "${SURVIVAL_MEMORY_LIMIT:-12G}"
 
-
   # =================================================================
   # 4. PVP SERVER
   # =================================================================
@@ -252,7 +254,6 @@ services:
     networks:
       - internal_net
 
-
   # =================================================================
   # 5. POSTGRES
   # =================================================================
@@ -278,7 +279,6 @@ services:
         limits:
           memory: "1G"
 
-
   # =================================================================
   # 6. REDIS
   # =================================================================
@@ -303,14 +303,12 @@ services:
         limits:
           memory: "512M"
 
-
 # ===================================================================
 # NETWORKS
 # ===================================================================
 networks:
   internal_net:
     driver: bridge
-
 
 # ===================================================================
 # VOLUMES
@@ -322,4 +320,3 @@ volumes:
   proxy_data:
   postgres_data:
   redis_data:
-
