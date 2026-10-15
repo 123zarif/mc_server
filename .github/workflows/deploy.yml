@@ -1,0 +1,75 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute deployment commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            echo "🚀 Starting Minecraft Server Network deployment on VPS..."
+
+            # 1. Target directory
+            DEPLOY_DIR="${{ secrets.VPS_DIR || '~/mc_server' }}"
+            eval DEPLOY_DIR="$DEPLOY_DIR"
+            
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "❌ Error: Deployment directory '$DEPLOY_DIR' does not exist on VPS."
+              exit 1
+            fi
+
+            cd "$DEPLOY_DIR"
+            echo "📂 Working directory: $(pwd)"
+
+            # 2. Check for required .env file
+            if [ ! -f ".env" ]; then
+              echo "⚠️ Warning: .env file not found in $DEPLOY_DIR. Creating from .env.example if available..."
+              if [ -f ".env.example" ]; then
+                cp .env.example .env
+                echo "Created .env from .env.example. Please review secrets."
+              else
+                echo "❌ Error: Neither .env nor .env.example exists."
+                exit 1
+              fi
+            fi
+
+            # 3. Pull latest code from main branch
+            echo "📥 Fetching and syncing latest commits from main..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 4. Smart Docker Compose Build & Update
+            echo "🐳 Building updated images and launching containers..."
+            docker compose up -d --build --remove-orphans
+
+            # 5. Clean up dangling Docker images to preserve VPS disk space
+            echo "🧹 Cleaning up dangling build images..."
+            docker image prune -f
+
+            # 6. Status verification
+            echo "✅ Deployment complete! Container health status:"
+            docker compose ps
+
