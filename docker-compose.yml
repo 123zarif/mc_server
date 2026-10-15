@@ -74,6 +74,7 @@ services:
 
       LEVEL: "world"
       WORLD: "/world-template"
+      FORCE_WORLD_COPY: "true"
 
       MODRINTH_PROJECTS: "placeholderapi"
 
