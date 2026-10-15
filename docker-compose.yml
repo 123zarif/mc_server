@@ -54,6 +54,9 @@ services:
 
       MODE: adventure
       FORCE_GAMEMODE: "true"
+      DIFFICULTY: "peaceful"
+      PVP: "FALSE"
+      ANNOUNCE_PLAYER_ACHIEVEMENTS: "false"
 
       TYPE: "${MC_TYPE:-PURPUR}"
       VERSION: "${MC_VERSION:-26.2}"
