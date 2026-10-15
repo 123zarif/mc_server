@@ -1,0 +1,26 @@
+{
+    # Global options
+}
+
+# ===================================================================
+# 1. Main Network Dashboard & Web Console
+# ===================================================================
+zarifzuhayer.tech, panel.zarifzuhayer.tech, console.zarifzuhayer.tech {
+    # Live Survival World Map subpath shortcut
+    handle_path /map* {
+        reverse_proxy mc-survival:8080
+    }
+
+    # Dashboard & Web Console (Fastify API & WebSockets)
+    handle {
+        reverse_proxy mc-dashboard:3000
+    }
+}
+
+# ===================================================================
+# 2. Dedicated Dynamic Survival Map Subdomain
+# ===================================================================
+map.zarifzuhayer.tech {
+    reverse_proxy mc-survival:8080
+}
+
