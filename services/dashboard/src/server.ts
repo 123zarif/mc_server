@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import websocket from '@fastify/websocket';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 import { config } from './config.js';
@@ -67,6 +68,22 @@ async function main() {
             port: parseInt(process.env.VOICE_CHAT_PORT || '24454', 10),
             protocol: 'UDP'
           }
+        },
+        system: {
+          javaVersion: '21.0.6 (OpenJDK)',
+          operatingSystem: 'Linux (Oracle Cloud)',
+          processors: os.cpus()?.length || 4,
+        },
+        gameSettings: {
+          software: 'Purpur / Paper',
+          version: '1.21.4',
+          pvp: true,
+          gamemode: 'survival',
+          spawnProtection: 16,
+          difficulty: 'HARD',
+          worldCount: 3,
+          worldTime: '07:11',
+          hardcore: false
         },
         servers: config.servers.map(s => ({
           id: s.id,

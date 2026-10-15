@@ -41,6 +41,24 @@ interface ConnectionMetadata {
   voice: { port: number; protocol: string };
 }
 
+interface SystemInfoMetadata {
+  javaVersion: string;
+  operatingSystem: string;
+  processors: number;
+}
+
+interface GameSettingsMetadata {
+  software: string;
+  version: string;
+  pvp: boolean;
+  gamemode: string;
+  spawnProtection: number;
+  difficulty: string;
+  worldCount: number;
+  worldTime: string;
+  hardcore: boolean;
+}
+
 export default function DashboardPage() {
   const [serverName, setServerName] = useState<string>(
     process.env.NEXT_PUBLIC_SERVER_NAME || 'Minecraft Network'
@@ -59,6 +77,24 @@ export default function DashboardPage() {
     voice: { port: 24454, protocol: 'UDP' },
   });
 
+  const [systemInfo, setSystemInfo] = useState<SystemInfoMetadata>({
+    javaVersion: '21.0.6 (OpenJDK)',
+    operatingSystem: 'Linux (Oracle Cloud)',
+    processors: 4,
+  });
+
+  const [gameSettings, setGameSettings] = useState<GameSettingsMetadata>({
+    software: 'Purpur / Paper',
+    version: '1.21.4',
+    pvp: true,
+    gamemode: 'survival',
+    spawnProtection: 16,
+    difficulty: 'HARD',
+    worldCount: 3,
+    worldTime: '07:11',
+    hardcore: false,
+  });
+
   const [nodesConfig, setNodesConfig] = useState<ServerNodeConfig[]>([
     { id: 'velocity', name: 'Velocity Proxy', type: 'proxy', description: 'Edge Proxy', port: 25577 },
     { id: 'auth', name: 'Auth Gateway', type: 'backend', description: 'Player Authentication', port: 25565 },
@@ -67,6 +103,34 @@ export default function DashboardPage() {
   ]);
 
   const [telemetry, setTelemetry] = useState<Record<string, ServerTelemetry>>({});
+
+  // Helper to flatten nested metrics from server status API
+  const parseServerItem = (s: any): ServerTelemetry => {
+    const rawMetrics = s.metrics || {};
+    const cpuVal = typeof rawMetrics.cpuPercent === 'number' ? rawMetrics.cpuPercent : 0;
+    const memUsed = typeof rawMetrics.memoryUsedMb === 'number' ? rawMetrics.memoryUsedMb : 0;
+    const memLimit = typeof rawMetrics.memoryLimitMb === 'number' && rawMetrics.memoryLimitMb > 0 ? rawMetrics.memoryLimitMb : 3072;
+    const memPct = typeof rawMetrics.memoryPercent === 'number' ? rawMetrics.memoryPercent : Math.round((memUsed / memLimit) * 100);
+    const upSec = typeof rawMetrics.uptimeSeconds === 'number' ? rawMetrics.uptimeSeconds : 0;
+    const stateVal = rawMetrics.state && rawMetrics.state !== 'unknown' ? rawMetrics.state : (s.isOnline ? 'running' : 'exited');
+
+    return {
+      id: s.id,
+      name: s.name,
+      type: s.type,
+      state: stateVal,
+      cpuPercent: cpuVal,
+      memoryUsedMb: memUsed,
+      memoryLimitMb: memLimit,
+      memoryPercent: memPct,
+      uptimeSeconds: upSec,
+      players: {
+        online: s.players?.online ?? 0,
+        max: s.players?.max && s.players.max > 0 ? s.players.max : 20,
+        list: (s.players?.list || []).map((p: any) => (typeof p === 'string' ? p : p.name || 'Player')),
+      },
+    };
+  };
 
   // 1. Load Token on Mount
   useEffect(() => {
@@ -94,6 +158,8 @@ export default function DashboardPage() {
           if (data.serverName) setServerName(data.serverName);
           if (data.superadmins) setSuperadmins(data.superadmins);
           if (data.connection) setConnectionInfo(data.connection);
+          if (data.system) setSystemInfo(data.system);
+          if (data.gameSettings) setGameSettings(data.gameSettings);
           if (data.servers && Array.isArray(data.servers)) {
             setNodesConfig(data.servers);
           }
@@ -105,7 +171,7 @@ export default function DashboardPage() {
     fetchConfig();
   }, []);
 
-  // 3. Connect Telemetry WebSocket / Polling Fallback (Public & Instant)
+  // 3. Connect Telemetry WebSocket / Polling Fallback
   useEffect(() => {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/ws/telemetry`;
@@ -120,8 +186,8 @@ export default function DashboardPage() {
           const payload = JSON.parse(event.data);
           if (payload.type === 'telemetry' && Array.isArray(payload.servers)) {
             const mapped: Record<string, ServerTelemetry> = {};
-            payload.servers.forEach((s: ServerTelemetry) => {
-              mapped[s.id] = s;
+            payload.servers.forEach((s: any) => {
+              mapped[s.id] = parseServerItem(s);
             });
             setTelemetry(mapped);
           }
@@ -135,7 +201,7 @@ export default function DashboardPage() {
       setNetworkStatus('disconnected');
     }
 
-    // Polling fallback every 3.5s (Works for both guests and admins)
+    // Polling fallback every 3s
     const fetchServers = async () => {
       try {
         const headers: Record<string, string> = {};
@@ -145,8 +211,8 @@ export default function DashboardPage() {
           const data = await res.json();
           if (data.servers && Array.isArray(data.servers)) {
             const mapped: Record<string, ServerTelemetry> = {};
-            data.servers.forEach((s: ServerTelemetry) => {
-              mapped[s.id] = s;
+            data.servers.forEach((s: any) => {
+              mapped[s.id] = parseServerItem(s);
             });
             setTelemetry(mapped);
             setNetworkStatus('connected');
@@ -157,7 +223,7 @@ export default function DashboardPage() {
       }
     };
 
-    pollInterval = setInterval(fetchServers, 3500);
+    pollInterval = setInterval(fetchServers, 3000);
     fetchServers();
 
     return () => {
@@ -257,10 +323,10 @@ export default function DashboardPage() {
     state: 'unknown',
     cpuPercent: 0,
     memoryUsedMb: 0,
-    memoryLimitMb: 1024,
+    memoryLimitMb: 3072,
     memoryPercent: 0,
     uptimeSeconds: 0,
-    players: { online: 0, max: 100, list: [] },
+    players: { online: 0, max: 20, list: [] },
   };
 
   const allNodesList: ServerTelemetry[] = nodesConfig.map((cfg) => {
@@ -272,15 +338,14 @@ export default function DashboardPage() {
         state: 'unknown',
         cpuPercent: 0,
         memoryUsedMb: 0,
-        memoryLimitMb: 1024,
+        memoryLimitMb: 3072,
         memoryPercent: 0,
         uptimeSeconds: 0,
-        players: { online: 0, max: 100, list: [] },
+        players: { online: 0, max: 20, list: [] },
       }
     );
   });
 
-  // Calculate total players across network
   const totalNetworkPlayers = Object.values(telemetry).reduce(
     (acc, curr) => acc + (curr.players?.online || 0),
     0
@@ -288,13 +353,16 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#0c0816]">
-      {/* Sidebar */}
+      {/* Sidebar with VoxelDash branding and account footer */}
       <Sidebar
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         activeNode={activeNode}
         onSelectNode={setActiveNode}
         nodes={nodesConfig}
+        serverName={serverName}
+        user={user}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -320,6 +388,8 @@ export default function DashboardPage() {
                 onExecuteCommand={handleExecuteCommand}
                 isAdmin={!!user?.isAdmin}
                 connectionInfo={connectionInfo}
+                systemInfo={systemInfo}
+                gameSettings={gameSettings}
               />
             )}
 
@@ -344,7 +414,7 @@ export default function DashboardPage() {
               <PlayersTab
                 activeNode={activeNode}
                 onlinePlayers={activeNodeData.players?.list || []}
-                maxPlayers={activeNodeData.players?.max || 100}
+                maxPlayers={activeNodeData.players?.max || 20}
                 onRefresh={() => {}}
                 onPlayerAction={handlePlayerAction}
                 isAdmin={!!user?.isAdmin}
