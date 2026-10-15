@@ -322,10 +322,10 @@ services:
         condition: service_started
 
     ports:
-      - "${DASHBOARD_PORT:-3000}:3000"
+      - "${DASHBOARD_PORT:-3001}:3001"
 
     environment:
-      DASHBOARD_PORT: "3000"
+      DASHBOARD_PORT: "${DASHBOARD_PORT:-3001}"
       DASHBOARD_HOST: "0.0.0.0"
       JWT_SECRET: "${DASHBOARD_JWT_SECRET:-${FORWARDING_SECRET}}"
       DASHBOARD_SUPERADMINS: "${DASHBOARD_SUPERADMINS:-litlua,ozzy}"

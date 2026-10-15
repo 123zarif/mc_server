@@ -11,7 +11,7 @@ export interface ServerNode {
 }
 
 export const config = {
-  port: parseInt(process.env.DASHBOARD_PORT || '3000', 10),
+  port: parseInt(process.env.DASHBOARD_PORT || '3001', 10),
   host: process.env.DASHBOARD_HOST || '0.0.0.0',
   jwtSecret: process.env.JWT_SECRET || 'mc_network_secret_key_change_in_production_123456789',
   superadmins: (process.env.DASHBOARD_SUPERADMINS || 'litlua,ozzy')
