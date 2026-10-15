@@ -308,25 +308,23 @@ services:
           memory: "512M"
 
   # =================================================================
-  # 7. NETWORK MANAGEMENT DASHBOARD & API
+  # 7. NETWORK MANAGEMENT DASHBOARD BACKEND (API & WEBSOCKETS)
   # =================================================================
-  dashboard:
+  dashboard-api:
     build:
       context: ./services/dashboard
       dockerfile: Dockerfile
-    image: mc-network-dashboard:latest
-    container_name: mc-dashboard
+    image: mc-network-dashboard-api:latest
+    container_name: mc-dashboard-api
     restart: unless-stopped
 
     depends_on:
       postgres:
         condition: service_started
 
-    ports:
-      - "${DASHBOARD_PORT:-3001}:3001"
-
     environment:
-      DASHBOARD_PORT: "${DASHBOARD_PORT:-3001}"
+      SERVER_NAME: "${SERVER_NAME:-Minecraft Network}"
+      DASHBOARD_PORT: "4000"
       DASHBOARD_HOST: "0.0.0.0"
       JWT_SECRET: "${DASHBOARD_JWT_SECRET:-${FORWARDING_SECRET}}"
       DASHBOARD_SUPERADMINS: "${DASHBOARD_SUPERADMINS:-litlua,ozzy}"
@@ -349,10 +347,37 @@ services:
     deploy:
       resources:
         limits:
-          memory: "512M"
+          memory: "384M"
 
   # =================================================================
-  # 8. CADDY REVERSE PROXY & AUTOMATIC TLS
+  # 8. NETWORK MANAGEMENT NEXT.JS FRONTEND
+  # =================================================================
+  dashboard-web:
+    build:
+      context: ./services/web
+      dockerfile: Dockerfile
+    image: mc-network-dashboard-web:latest
+    container_name: mc-dashboard-web
+    restart: unless-stopped
+
+    depends_on:
+      - dashboard-api
+
+    environment:
+      NEXT_PUBLIC_SERVER_NAME: "${SERVER_NAME:-Minecraft Network}"
+      INTERNAL_API_URL: "http://mc-dashboard-api:4000"
+      TZ: "${TZ:-UTC}"
+
+    networks:
+      - internal_net
+
+    deploy:
+      resources:
+        limits:
+          memory: "256M"
+
+  # =================================================================
+  # 9. CADDY REVERSE PROXY & AUTOMATIC TLS
   # =================================================================
   caddy:
     image: caddy:2-alpine
@@ -363,6 +388,7 @@ services:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
       - "${HTTPS_PORT:-443}:443/udp"
+      - "${DASHBOARD_PORT:-3001}:3001"
 
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

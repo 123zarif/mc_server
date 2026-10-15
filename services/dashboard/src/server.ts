@@ -48,6 +48,39 @@ async function main() {
     await fastify.register(serverRoutes, { prefix: '/api/servers' });
     await fastify.register(playerRoutes, { prefix: '/api/servers' });
 
+    fastify.get('/api/config', async () => {
+      return {
+        serverName: config.serverName,
+        superadmins: config.superadmins,
+        servers: config.servers.map(s => ({
+          id: s.id,
+          name: s.name,
+          type: s.type,
+          description: s.description,
+          port: s.port
+        }))
+      };
+    });
+
+    fastify.post('/api/config', async (request, reply) => {
+      const authHeader = request.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return reply.code(401).send({ error: 'Unauthorized: Authentication required' });
+      }
+      const token = authHeader.substring(7);
+      const { verifyToken } = await import('./auth/jwt.js');
+      const session = verifyToken(token);
+      if (!session || !session.isAdmin) {
+        return reply.code(403).send({ error: 'Forbidden: Admin access required' });
+      }
+
+      const { serverName } = request.body as { serverName?: string };
+      if (serverName && serverName.trim()) {
+        config.serverName = serverName.trim();
+      }
+      return reply.send({ success: true, serverName: config.serverName });
+    });
+
     // 4. WebSocket Routes
     await fastify.register(consoleWsRoutes);
     await fastify.register(telemetryWsRoutes);
@@ -62,12 +95,9 @@ async function main() {
       fastify.log.warn(`[PostgreSQL] Initial connection warning: ${err.message}. Retries active.`);
     }
 
-    // 6. SPA Fallback (Redirect unmatched routes to index.html)
+    // 6. Clean API 404 Handler
     fastify.setNotFoundHandler((request, reply) => {
-      if (request.raw.url && request.raw.url.startsWith('/api')) {
-        return reply.code(404).send({ error: 'Endpoint not found' });
-      }
-      return reply.sendFile('index.html');
+      return reply.code(404).send({ error: 'API or WebSocket endpoint not found' });
     });
 
     // 7. Start Listening

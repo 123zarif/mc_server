@@ -3,16 +3,43 @@
 }
 
 # ===================================================================
-# Main Network Dashboard & Web Console
+# Direct Port Access (e.g. http://localhost:3001 or http://<vps-ip>:3001)
 # ===================================================================
-http://zarifzuhayer.tech, zarifzuhayer.tech {
-    # Live Survival World Map subpath shortcut
+:3001 {
     handle_path /map* {
         reverse_proxy mc-survival:8080
     }
 
-    # Dashboard & Web Console (Fastify API & WebSockets)
+    handle /api/* {
+        reverse_proxy mc-dashboard-api:4000
+    }
+
+    handle /ws/* {
+        reverse_proxy mc-dashboard-api:4000
+    }
+
     handle {
-        reverse_proxy mc-dashboard:3001
+        reverse_proxy mc-dashboard-web:3000
+    }
+}
+
+# ===================================================================
+# Main Domain & Automatic TLS (zarifzuhayer.tech)
+# ===================================================================
+http://zarifzuhayer.tech, zarifzuhayer.tech {
+    handle_path /map* {
+        reverse_proxy mc-survival:8080
+    }
+
+    handle /api/* {
+        reverse_proxy mc-dashboard-api:4000
+    }
+
+    handle /ws/* {
+        reverse_proxy mc-dashboard-api:4000
+    }
+
+    handle {
+        reverse_proxy mc-dashboard-web:3000
     }
 }
