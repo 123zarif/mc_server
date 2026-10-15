@@ -3,273 +3,624 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minecraft Network Console</title>
+  <title>VoxelDash — Minecraft Server Management</title>
   
-  <!-- Pure CSS shadcn/ui Design System (No Tailwind CSS) -->
-  <link rel="stylesheet" href="/shadcn.css" />
+  <!-- VoxelDash Pure CSS Design System (Zero Tailwind CSS) -->
+  <link rel="stylesheet" href="/voxeldash.css" />
 
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Xterm.js Terminal Canvas -->
+  <!-- Chart.js for Memory & CPU Area Line Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Xterm.js Terminal Engine -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 </head>
 <body>
 
-  <!-- ==================== AUTHENTICATION OVERLAY (SHADCN CARD) ==================== -->
-  <div id="auth-overlay" class="overlay">
-    <div class="card auth-modal">
-      <div class="card-header" style="text-align: center; align-items: center;">
-        <div class="logo-badge" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.5rem;">
-          <i class="fa-solid fa-cube" style="font-size: 1.25rem;"></i>
+  <!-- ==================== AUTHENTICATION OVERLAY ==================== -->
+  <div id="auth-modal" class="auth-backdrop">
+    <div class="auth-box">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <i class="fa-solid fa-cube"></i>
         </div>
-        <h2 class="card-title" style="font-size: 1.25rem;">Minecraft Network Console</h2>
-        <p class="card-description">Authenticate via in-game AuthMe credentials</p>
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff;">VoxelDash</h2>
+        <p style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem;">Sign in with your Minecraft AuthMe credentials</p>
       </div>
 
-      <div class="card-content">
-        <!-- Tabs: Login vs Initial Setup -->
-        <div class="tabs-list" style="margin-bottom: 1.25rem;">
-          <button id="tab-btn-login" class="tabs-trigger active" onclick="switchAuthTab('login')">Sign In</button>
-          <button id="tab-btn-register" class="tabs-trigger" onclick="switchAuthTab('register')">Setup / Register</button>
-        </div>
-
-        <div id="auth-alert" class="badge badge-destructive hidden" style="width: 100%; border-radius: var(--radius); padding: 0.625rem; text-transform: none; margin-bottom: 1rem; display: none;">
-          <i class="fa-solid fa-circle-exclamation"></i>
-          <span id="auth-alert-msg" style="flex: 1; text-align: left;"></span>
-        </div>
-
-        <!-- Login Form -->
-        <form id="login-form">
-          <div class="form-group">
-            <label class="label" for="login-username">Minecraft Username</label>
-            <input type="text" id="login-username" class="input" placeholder="e.g. litlua" required autocomplete="username" />
-          </div>
-
-          <div class="form-group">
-            <label class="label" for="login-password">In-Game Password</label>
-            <input type="password" id="login-password" class="input" placeholder="••••••••" required autocomplete="current-password" />
-          </div>
-
-          <button type="submit" id="login-submit" class="btn btn-primary" style="width: 100%; height: 2.5rem; margin-top: 0.5rem;">
-            <span>Sign In to Console</span>
-            <i class="fa-solid fa-arrow-right"></i>
-          </button>
-        </form>
-
-        <!-- Register / Initial Setup Form -->
-        <form id="register-form" class="hidden" style="display: none;">
-          <div class="form-group">
-            <label class="label" for="reg-username">Admin Username</label>
-            <input type="text" id="reg-username" class="input" placeholder="e.g. litlua" required />
-            <span style="font-size: 0.6875rem; color: var(--muted-foreground); margin-top: 0.25rem;">Must match DASHBOARD_SUPERADMINS in .env</span>
-          </div>
-
-          <div class="form-group">
-            <label class="label" for="reg-password">Set Initial In-Game Password</label>
-            <input type="password" id="reg-password" class="input" placeholder="At least 6 characters" minlength="6" required />
-          </div>
-
-          <button type="submit" id="reg-submit" class="btn btn-primary" style="width: 100%; height: 2.5rem; margin-top: 0.5rem;">
-            <span>Initialize Account</span>
-            <i class="fa-solid fa-check"></i>
-          </button>
-        </form>
+      <!-- Sign In vs Setup Tabs -->
+      <div class="sub-tabs-container" style="width: 100%; display: flex; margin-bottom: 1.25rem;">
+        <button id="auth-tab-login" class="sub-tab-btn active" style="flex: 1; justify-content: center;" onclick="switchAuthTab('login')">Sign In</button>
+        <button id="auth-tab-register" class="sub-tab-btn" style="flex: 1; justify-content: center;" onclick="switchAuthTab('register')">Setup / Register</button>
       </div>
+
+      <div id="auth-error-badge" class="hidden" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 0.625rem 0.875rem; border-radius: var(--radius-md); font-size: 0.8125rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="auth-error-text">Authentication failed</span>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login">
+        <div class="auth-input-group">
+          <label class="auth-label">Minecraft Username</label>
+          <input type="text" id="login-user" class="auth-input" placeholder="e.g. litlua" required autocomplete="username" />
+        </div>
+
+        <div class="auth-input-group">
+          <label class="auth-label">In-Game Password</label>
+          <input type="password" id="login-pass" class="auth-input" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+
+        <button type="submit" class="vox-btn vox-btn-purple" style="width: 100%; height: 2.625rem; margin-top: 0.5rem;">
+          <span>Sign In</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- Setup/Register Form -->
+      <form id="form-register" class="hidden" style="display: none;">
+        <div class="auth-input-group">
+          <label class="auth-label">Administrator Username</label>
+          <input type="text" id="reg-user" class="auth-input" placeholder="e.g. litlua" required />
+          <span style="font-size: 0.6875rem; color: var(--text-dim); display: block; margin-top: 0.25rem;">Configured in DASHBOARD_SUPERADMINS</span>
+        </div>
+
+        <div class="auth-input-group">
+          <label class="auth-label">Set Initial In-Game Password</label>
+          <input type="password" id="reg-pass" class="auth-input" placeholder="At least 6 characters" minlength="6" required />
+        </div>
+
+        <button type="submit" class="vox-btn vox-btn-purple" style="width: 100%; height: 2.625rem; margin-top: 0.5rem;">
+          <span>Create & Verify Admin</span>
+          <i class="fa-solid fa-check"></i>
+        </button>
+      </form>
     </div>
   </div>
 
-  <!-- ==================== MAIN DASHBOARD INTERFACE ==================== -->
-  <div id="app" class="hidden" style="display: flex; flex-direction: column; flex: 1;">
-    <!-- Top Navigation Bar -->
-    <header class="navbar">
-      <div class="nav-left">
-        <div class="logo-badge">
-          <i class="fa-solid fa-cube"></i>
-        </div>
-        <div>
-          <div class="brand-text">MC NETWORK</div>
-        </div>
-
-        <div style="height: 1.25rem; width: 1px; background-color: var(--border); margin: 0 0.5rem;"></div>
-
-        <!-- Node Selector -->
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 0.75rem; color: var(--muted-foreground);">Node:</span>
-          <select id="server-select" class="select" style="height: 2rem; width: 180px; font-size: 0.8125rem;">
-            <option value="velocity">Velocity Proxy</option>
-            <option value="survival" selected>Survival SMP</option>
-            <option value="pvp">PvP Arena</option>
-            <option value="auth">Auth Gateway</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Power Actions & User Menu -->
-      <div class="nav-right">
-        <div style="display: flex; align-items: center; gap: 0.375rem; background-color: #09090b; padding: 0.25rem; border-radius: calc(var(--radius) - 2px); border: 1px solid var(--border);">
-          <button id="btn-restart" class="btn btn-sm btn-warning" title="Restart Active Server">
-            <i class="fa-solid fa-arrows-rotate"></i>
-            <span>Restart</span>
-          </button>
-          <button id="btn-stop" class="btn btn-sm btn-destructive" title="Stop Active Server">
-            <i class="fa-solid fa-power-off"></i>
-            <span>Stop</span>
-          </button>
-          <button id="btn-start" class="btn btn-sm btn-success" title="Start Active Server">
-            <i class="fa-solid fa-play"></i>
-            <span>Start</span>
-          </button>
-        </div>
-
-        <div style="height: 1.25rem; width: 1px; background-color: var(--border); margin: 0 0.25rem;"></div>
-
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <img id="user-avatar" src="https://mc-heads.net/avatar/litlua/32" class="player-avatar" alt="Avatar" />
-          <div style="text-align: left;">
-            <div id="user-name" style="font-size: 0.8125rem; font-weight: 600; line-height: 1.2;">Admin</div>
-            <div id="user-role" style="font-size: 0.625rem; color: var(--muted-foreground); text-transform: uppercase;">OP</div>
+  <!-- ==================== MAIN VOXELDASH APPLICATION ==================== -->
+  <div id="main-app" class="app-container hidden">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div>
+        <!-- Brand / Header -->
+        <div class="sidebar-header">
+          <div class="sidebar-logo">
+            <i class="fa-solid fa-cube"></i>
           </div>
-          <button id="btn-logout" class="btn btn-sm btn-outline btn-icon-sm" title="Log Out" style="margin-left: 0.25rem;">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Container Grid -->
-    <main class="container">
-      <!-- Real-Time Metrics Cards Row -->
-      <section class="metrics-grid">
-        <!-- Container Status -->
-        <div class="card metric-card">
-          <div class="metric-header">
-            <span>Container Status</span>
-            <i class="fa-solid fa-server"></i>
+          <div>
+            <div class="sidebar-brand-name">VoxelDash</div>
+            <div class="sidebar-version">1.2.0-beta.21</div>
           </div>
-          <div class="metric-value">
-            <span id="metric-status" style="color: var(--success); text-transform: capitalize;">Running</span>
-          </div>
-          <div id="metric-uptime" class="metric-sub" style="margin-top: 0.25rem;">Uptime: 0m</div>
         </div>
 
-        <!-- Online Players -->
-        <div class="card metric-card">
-          <div class="metric-header">
-            <span>Online Players</span>
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav">
+          <div id="nav-overview" class="nav-item active" onclick="navigateView('overview')">
+            <i class="fa-solid fa-table-cells-large"></i>
+            <span>Overview</span>
+          </div>
+          <div id="nav-players" class="nav-item" onclick="navigateView('players')">
             <i class="fa-solid fa-users"></i>
+            <span>Players</span>
           </div>
-          <div class="metric-value">
-            <span id="metric-players">0 / 0</span>
+          <div id="nav-console" class="nav-item" onclick="navigateView('console')">
+            <i class="fa-solid fa-terminal"></i>
+            <span>Console</span>
           </div>
-          <div id="metric-ping" class="metric-sub" style="margin-top: 0.25rem;">Latency: -- ms</div>
+          <div id="nav-worlds" class="nav-item" onclick="navigateView('worlds')">
+            <i class="fa-solid fa-globe"></i>
+            <span>Worlds</span>
+          </div>
+          <div class="nav-item" onclick="openMapUrl()">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span>Squaremap</span>
+          </div>
+          <div id="nav-settings" class="nav-item" onclick="navigateView('settings')">
+            <i class="fa-solid fa-gear"></i>
+            <span>Settings</span>
+            <i class="fa-solid fa-chevron-right chevron-icon"></i>
+          </div>
+        </nav>
+      </div>
+
+      <!-- Bottom User Account Card -->
+      <div class="sidebar-footer">
+        <div class="user-account-card" onclick="promptLogout()">
+          <img id="sidebar-user-avatar" src="https://mc-heads.net/avatar/litlua/32" class="user-head-avatar" alt="Head" />
+          <div class="user-info-text">
+            <div id="sidebar-user-name" class="user-name-title">admin</div>
+            <div class="user-sub-label">Manage account</div>
+          </div>
+          <i class="fa-solid fa-up-down" style="font-size: 0.6875rem; color: var(--text-dim);"></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT VIEWPORT -->
+    <main class="main-viewport">
+      <!-- TOP BREADCRUMB BAR -->
+      <header class="top-header">
+        <div class="breadcrumb-area">
+          <button class="breadcrumb-btn" title="Toggle Sidebar">
+            <i class="fa-solid fa-bars-staggered"></i>
+          </button>
+          <div class="breadcrumb-path">
+            <span>Home</span>
+            <i class="fa-solid fa-chevron-right" style="font-size: 0.625rem;"></i>
+            <span id="breadcrumb-current" class="current">Overview</span>
+          </div>
         </div>
 
-        <!-- CPU Gauge -->
-        <div class="card metric-card">
-          <div class="metric-header">
-            <span>CPU Load</span>
-            <i class="fa-solid fa-microchip"></i>
+        <div class="top-actions">
+          <!-- Server Node Selector -->
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Node:</span>
+            <select id="active-node-select" class="node-select-badge">
+              <option value="velocity">Velocity Proxy</option>
+              <option value="survival" selected>Survival SMP</option>
+              <option value="pvp">PvP Arena</option>
+              <option value="auth">Auth Gateway</option>
+            </select>
           </div>
-          <div class="metric-value">
-            <span id="metric-cpu">0.0%</span>
-          </div>
-          <div class="progress-bar">
-            <div id="bar-cpu" class="progress-fill" style="width: 0%; background-color: var(--success);"></div>
-          </div>
-        </div>
 
-        <!-- Memory Allocation -->
-        <div class="card metric-card">
-          <div class="metric-header">
-            <span>RAM Allocation</span>
-            <i class="fa-solid fa-memory"></i>
-          </div>
-          <div class="metric-value">
-            <span id="metric-ram">0 MB</span>
-            <span id="metric-ram-max" class="metric-sub">/ 0 MB</span>
-          </div>
-          <div class="progress-bar">
-            <div id="bar-ram" class="progress-fill" style="width: 0%; background-color: var(--warning);"></div>
-          </div>
+          <button class="breadcrumb-btn" title="Options">
+            <i class="fa-solid fa-ellipsis"></i>
+          </button>
         </div>
-      </section>
+      </header>
 
-      <!-- Dashboard Grid: Console (Left) + Player List / Nodes (Right) -->
-      <section class="dashboard-grid">
-        <!-- Left: Interactive Terminal -->
-        <div class="card terminal-card">
-          <div class="terminal-header">
-            <div class="terminal-title">
-              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--success);"></span>
-              <span id="terminal-badge">console@mc-survival</span>
+      <!-- DYNAMIC VIEWS CONTAINER -->
+      <div class="view-content-wrapper">
+
+        <!-- ==================== VIEW 1: OVERVIEW ==================== -->
+        <section id="view-overview" class="view-panel">
+          <div class="overview-grid">
+            
+            <!-- ROW 1, COL 1: Memory Usage Chart Card -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-microchip" style="color: #c084fc;"></i>
+                  <span>Memory Usage</span>
+                </div>
+                <button class="vox-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+              </div>
+              <div style="height: 120px; width: 100%;">
+                <canvas id="chart-memory"></canvas>
+              </div>
             </div>
 
-            <!-- Quick Action Command Chips -->
-            <div class="terminal-chips">
-              <button class="chip-btn" onclick="sendQuickCommand('tps')">/tps</button>
-              <button class="chip-btn" onclick="sendQuickCommand('list')">/list</button>
-              <button class="chip-btn" onclick="sendQuickCommand('gc')">/gc</button>
-              <button class="chip-btn" onclick="sendQuickCommand('spark tps')">/spark tps</button>
-              <button class="chip-btn" onclick="clearTerminal()" title="Clear Output">
-                <i class="fa-solid fa-eraser"></i>
-              </button>
+            <!-- ROW 1, COL 2: SERVER INFO -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-circle-info" style="color: #c084fc;"></i>
+                  <span>Server Info</span>
+                </div>
+              </div>
+              <div class="info-row-list" style="margin-top: 0.5rem;">
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-cube"></i> Software</span>
+                  <span id="info-software" class="info-row-value purple">Purpur</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-code-branch"></i> Version</span>
+                  <span id="info-version" class="info-row-value purple">26.2</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-network-wired"></i> Port</span>
+                  <span id="info-port" class="info-row-value purple">25565</span>
+                </div>
+              </div>
             </div>
+
+            <!-- ROW 1, COL 3: ONLINE PLAYERS BIG STAT -->
+            <div class="vox-card" style="justify-content: center;">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-users" style="color: #c084fc;"></i>
+                  <span>Online Players</span>
+                </div>
+              </div>
+              <div style="margin-top: 0.5rem;">
+                <div id="stat-online-players" class="big-stat-number purple-accent">0 / 20</div>
+              </div>
+            </div>
+
+            <!-- ROW 2, COL 1: MEMORY PROGRESS BAR -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-hard-drive" style="color: #c084fc;"></i>
+                  <span>Memory</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 0.5rem;">
+                <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">
+                  <span id="mem-used-mb">32</span> <span style="font-size: 0.875rem; color: var(--text-dim);">/ <span id="mem-limit-mb">3,072</span> MB</span>
+                </div>
+                <span id="mem-percent-badge" style="font-weight: 600; font-size: 0.8125rem; color: #c084fc;">1%</span>
+              </div>
+              <div class="vox-progress-track">
+                <div id="mem-progress-bar" class="vox-progress-bar" style="width: 1%;"></div>
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-dim);">
+                Allocated: <span id="mem-allocated-text">52 MB</span>
+              </div>
+            </div>
+
+            <!-- ROW 2, COL 2: Player History Chart Card -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-chart-line" style="color: #c084fc;"></i>
+                  <span>Player History</span>
+                </div>
+                <button class="vox-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+              </div>
+              <div style="height: 120px; width: 100%;">
+                <canvas id="chart-players"></canvas>
+              </div>
+            </div>
+
+            <!-- ROW 2, COL 3: CPU Usage Chart Card -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-gauge" style="color: #34d399;"></i>
+                  <span>CPU Usage</span>
+                </div>
+                <button class="vox-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+              </div>
+              <div style="height: 120px; width: 100%;">
+                <canvas id="chart-cpu"></canvas>
+              </div>
+            </div>
+
+            <!-- ROW 3, COL 1: UPTIME BIG STAT -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-clock" style="color: #60a5fa;"></i>
+                  <span>Uptime</span>
+                </div>
+              </div>
+              <div style="margin-top: 0.5rem;">
+                <div id="stat-uptime" class="big-stat-number blue-accent">0h 7m</div>
+              </div>
+            </div>
+
+            <!-- ROW 3, COL 2: WORLD INFO -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-earth-americas" style="color: #34d399;"></i>
+                  <span>World Info</span>
+                </div>
+              </div>
+              <div class="info-row-list" style="margin-top: 0.5rem;">
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-list-ol"></i> Count</span>
+                  <span class="info-row-value green">3</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-sun"></i> World Time</span>
+                  <span id="info-world-time" class="info-row-value green">07:11</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-shield-halved"></i> Difficulty</span>
+                  <span id="info-difficulty" class="info-row-value green">HARD</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-skull"></i> Hardcore</span>
+                  <span class="info-row-value red"><i class="fa-solid fa-circle-xmark"></i> No</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROW 3, COL 3: SYSTEM INFO -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-sliders" style="color: var(--text-muted);"></i>
+                  <span>System Info</span>
+                </div>
+              </div>
+              <div class="info-row-list" style="margin-top: 0.5rem;">
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-brands fa-java"></i> Java Version</span>
+                  <span class="info-row-value">25.0.1</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-brands fa-linux"></i> Operating System</span>
+                  <span class="info-row-value">Linux</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-microchip"></i> Processors</span>
+                  <span class="info-row-value">4 (Ampere A1)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROW 4, COL 1: GAME SETTINGS -->
+            <div class="vox-card">
+              <div class="vox-card-header">
+                <div class="vox-card-title">
+                  <i class="fa-solid fa-gamepad" style="color: #c084fc;"></i>
+                  <span>Game Settings</span>
+                </div>
+              </div>
+              <div class="info-row-list" style="margin-top: 0.5rem;">
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-swords"></i> PvP</span>
+                  <span id="info-pvp" class="info-row-value red"><i class="fa-solid fa-circle-xmark"></i> No</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-person-running"></i> Gamemode</span>
+                  <span id="info-gamemode" class="info-row-value purple">survival</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label"><i class="fa-solid fa-shield"></i> Spawn Protection</span>
+                  <span class="info-row-value">16</span>
+                </div>
+              </div>
+            </div>
+
           </div>
+        </section>
 
-          <!-- Canvas -->
-          <div id="terminal-container" class="terminal-canvas"></div>
-
-          <!-- Command Input -->
-          <form id="cmd-form" class="terminal-prompt">
-            <span class="prompt-symbol">&gt;</span>
-            <input type="text" id="cmd-input" class="terminal-input" placeholder="Type a command (e.g. op, kick, say, gamemode)..." autocomplete="off" />
-            <button type="submit" class="btn btn-sm btn-primary">Execute</button>
-          </form>
-        </div>
-
-        <!-- Right: Online Players & Nodes Health -->
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-          <!-- Online Players Card -->
-          <div class="card" style="flex: 1; min-height: 280px;">
-            <div class="card-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+        <!-- ==================== VIEW 2: PLAYERS ==================== -->
+        <section id="view-players" class="view-panel hidden">
+          <!-- Banner Header -->
+          <div class="banner-card">
+            <div class="banner-left">
+              <div class="banner-icon-box">
+                <i class="fa-solid fa-users"></i>
+              </div>
               <div>
-                <h3 class="card-title">Online Players</h3>
-                <p class="card-description">Connected to current node</p>
-              </div>
-              <span id="player-badge" class="badge badge-default">0</span>
-            </div>
-
-            <div id="player-container" class="card-content" style="overflow-y: auto; max-height: 280px; padding: 0.75rem;">
-              <div style="text-align: center; color: var(--muted-foreground); padding: 2rem 0; font-size: 0.8125rem;">
-                <i class="fa-solid fa-ghost" style="font-size: 1.5rem; opacity: 0.4; margin-bottom: 0.5rem; display: block;"></i>
-                No players online
+                <div class="banner-title-text">Players</div>
+                <div class="banner-subtitle-text">Manage online players, whitelist, and bans</div>
               </div>
             </div>
           </div>
 
-          <!-- Network Nodes Health Card -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Network Nodes</h3>
-              <p class="card-description">Cluster connectivity</p>
-            </div>
+          <!-- Sub-Tabs Filter -->
+          <div class="sub-tabs-container">
+            <button class="sub-tab-btn active" onclick="filterPlayerTab('online')">
+              <span>Online</span> <span id="subtab-count-online" class="badge-num">0</span>
+            </button>
+            <button class="sub-tab-btn" onclick="filterPlayerTab('whitelist')">
+              <span>Whitelist</span> <span id="subtab-count-whitelist" class="badge-num">4</span>
+            </button>
+            <button class="sub-tab-btn" onclick="filterPlayerTab('banned')">
+              <span>Banned</span> <span id="subtab-count-banned" class="badge-num">0</span>
+            </button>
+            <button class="sub-tab-btn" onclick="filterPlayerTab('all')">
+              <span>All Players</span>
+            </button>
+          </div>
 
-            <div id="nodes-container" class="card-content" style="padding: 0.75rem;">
-              <!-- Populated dynamically -->
+          <!-- Whitelist Toggle Setting Card -->
+          <div class="toggle-setting-box">
+            <div class="toggle-box-left">
+              <div class="toggle-icon-wrap">
+                <i class="fa-solid fa-bars-staggered"></i>
+              </div>
+              <div>
+                <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">Whitelist</div>
+                <div id="whitelist-sub-label" style="font-size: 0.75rem; color: var(--text-muted);">All players can join</div>
+              </div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="whitelist-toggle-input" onchange="toggleWhitelist(this.checked)" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Action Button: Add Player -->
+          <div style="margin-bottom: 1.25rem;">
+            <button class="vox-btn vox-btn-purple" onclick="promptAddPlayer()">
+              <i class="fa-solid fa-plus"></i>
+              <span>Add Player</span>
+            </button>
+          </div>
+
+          <!-- Players Table -->
+          <div class="table-card">
+            <div class="table-header-row">
+              <div></div>
+              <div>Player</div>
+              <div>UUID</div>
+              <div style="text-align: right;"></div>
+            </div>
+            <div id="players-table-body">
+              <!-- Dynamically populated rows matching Screenshot 2/3/4 -->
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <!-- ==================== VIEW 3: WORLDS ==================== -->
+        <section id="view-worlds" class="view-panel hidden">
+          <!-- Banner Header -->
+          <div class="banner-card">
+            <div class="banner-left">
+              <div class="banner-icon-box">
+                <i class="fa-solid fa-globe"></i>
+              </div>
+              <div>
+                <div class="banner-title-text">Worlds</div>
+                <div class="banner-subtitle-text">Manage server worlds, weather, time, and difficulty</div>
+              </div>
+            </div>
+            <button class="vox-btn vox-btn-purple" onclick="dispatchServerCommand('say World management active')">
+              <i class="fa-solid fa-plus"></i>
+              <span>Create World</span>
+            </button>
+          </div>
+
+          <!-- Worlds 3-Column Grid matching Screenshot 5 -->
+          <div class="worlds-grid">
+            <!-- World 1: Overworld -->
+            <div class="world-card">
+              <div class="world-card-top">
+                <img src="https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/block/grass_block_side.png" class="world-block-thumb" alt="Grass" />
+                <div>
+                  <div class="world-name-title">world</div>
+                  <span class="world-dimension-badge badge-overworld">Overworld</span>
+                </div>
+              </div>
+              <div class="world-stats-line">
+                <span><i class="fa-solid fa-users" style="font-size: 0.75rem;"></i> 0</span>
+                <span><i class="fa-solid fa-sun" style="font-size: 0.75rem;"></i> Morning</span>
+                <span><i class="fa-solid fa-cloud-sun" style="font-size: 0.75rem;"></i> Clear</span>
+                <span><i class="fa-solid fa-shield" style="font-size: 0.75rem;"></i> Easy</span>
+              </div>
+              <div class="world-actions-row">
+                <button class="world-action-pill" onclick="dispatchServerCommand('time set day')">
+                  <i class="fa-regular fa-sun"></i> Time
+                </button>
+                <button class="world-action-pill" onclick="dispatchServerCommand('weather clear')">
+                  <i class="fa-solid fa-cloud"></i> Weather
+                </button>
+                <button class="world-action-pill" onclick="dispatchServerCommand('difficulty normal')">
+                  <i class="fa-solid fa-shield"></i> Difficulty
+                </button>
+              </div>
+            </div>
+
+            <!-- World 2: Nether -->
+            <div class="world-card">
+              <div class="world-card-top">
+                <img src="https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/block/netherrack.png" class="world-block-thumb" alt="Netherrack" />
+                <div>
+                  <div class="world-name-title">world_nether</div>
+                  <span class="world-dimension-badge badge-nether">Nether</span>
+                </div>
+              </div>
+              <div class="world-stats-line">
+                <span><i class="fa-solid fa-users" style="font-size: 0.75rem;"></i> 0</span>
+                <span><i class="fa-solid fa-sun" style="font-size: 0.75rem;"></i> Morning</span>
+                <span><i class="fa-solid fa-cloud-sun" style="font-size: 0.75rem;"></i> Clear</span>
+                <span><i class="fa-solid fa-shield" style="font-size: 0.75rem;"></i> Easy</span>
+              </div>
+              <div class="world-actions-row">
+                <button class="world-action-pill" onclick="dispatchServerCommand('time set day')">
+                  <i class="fa-regular fa-sun"></i> Time
+                </button>
+                <button class="world-action-pill" onclick="dispatchServerCommand('weather clear')">
+                  <i class="fa-solid fa-cloud"></i> Weather
+                </button>
+                <button class="world-action-pill" onclick="dispatchServerCommand('difficulty normal')">
+                  <i class="fa-solid fa-shield"></i> Difficulty
+                </button>
+              </div>
+            </div>
+
+            <!-- World 3: The End -->
+            <div class="world-card">
+              <div class="world-card-top">
+                <img src="https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/block/end_stone.png" class="world-block-thumb" alt="End Stone" />
+                <div>
+                  <div class="world-name-title">world_the_end</div>
+                  <span class="world-dimension-badge badge-the-end">The End</span>
+                </div>
+              </div>
+              <div class="world-stats-line">
+                <span><i class="fa-solid fa-users" style="font-size: 0.75rem;"></i> 0</span>
+                <span><i class="fa-solid fa-sun" style="font-size: 0.75rem;"></i> Morning</span>
+                <span><i class="fa-solid fa-cloud-sun" style="font-size: 0.75rem;"></i> Clear</span>
+                <span><i class="fa-solid fa-shield" style="font-size: 0.75rem;"></i> Easy</span>
+              </div>
+              <div class="world-actions-row">
+                <button class="world-action-pill" onclick="dispatchServerCommand('time set day')">
+                  <i class="fa-regular fa-sun"></i> Time
+                </button>
+                <button class="world-action-pill" onclick="dispatchServerCommand('weather clear')">
+                  <i class="fa-solid fa-cloud"></i> Weather
+                </button>
+                <button class="world-action-pill" onclick="dispatchServerCommand('difficulty normal')">
+                  <i class="fa-solid fa-shield"></i> Difficulty
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 4: CONSOLE ==================== -->
+        <section id="view-console" class="view-panel hidden">
+          <div class="console-full-card">
+            <!-- Header with Power Controls & Quick Chips -->
+            <div style="background-color: var(--bg-card); padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span id="console-live-indicator" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--color-green);"></span>
+                <span id="console-server-title" style="font-family: var(--font-mono); font-size: 0.8125rem; color: #fff;">console@mc-survival</span>
+              </div>
+
+              <!-- Quick action chips & Power controls -->
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button class="vox-btn vox-btn-secondary vox-btn-sm" onclick="sendQuickCommand('tps')">/tps</button>
+                <button class="vox-btn vox-btn-secondary vox-btn-sm" onclick="sendQuickCommand('list')">/list</button>
+                <button class="vox-btn vox-btn-secondary vox-btn-sm" onclick="sendQuickCommand('gc')">/gc</button>
+                <button class="vox-btn vox-btn-secondary vox-btn-sm" onclick="sendQuickCommand('spark tps')">/spark tps</button>
+                <div style="width: 1px; height: 16px; background: var(--border);"></div>
+                <button class="vox-btn vox-btn-sm" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);" onclick="triggerPowerAction('restart')">Restart</button>
+                <button class="vox-btn vox-btn-sm" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="triggerPowerAction('stop')">Stop</button>
+                <button class="vox-btn vox-btn-sm" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);" onclick="triggerPowerAction('start')">Start</button>
+              </div>
+            </div>
+
+            <!-- Xterm Terminal Canvas -->
+            <div id="xterm-container" class="console-terminal-area"></div>
+
+            <!-- Terminal Command Input Bar -->
+            <form id="console-command-form" class="console-bottom-bar">
+              <span style="font-family: var(--font-mono); color: #c084fc; font-weight: 700; font-size: 1rem;">&gt;</span>
+              <input type="text" id="console-cmd-input" class="console-input-field" placeholder="Enter console command (e.g. op, ban, kick, say)..." autocomplete="off" />
+              <button type="submit" class="vox-btn vox-btn-purple">Execute</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 5: SETTINGS ==================== -->
+        <section id="view-settings" class="view-panel hidden">
+          <div class="vox-card" style="max-width: 680px;">
+            <div class="vox-card-header">
+              <div class="vox-card-title">
+                <i class="fa-solid fa-gear" style="color: #c084fc;"></i>
+                <span>Network Settings</span>
+              </div>
+            </div>
+            <div class="info-row-list" style="margin-top: 1rem;">
+              <div class="info-row">
+                <span class="info-row-label">Forwarding Secret</span>
+                <span class="info-row-value purple">Velocity Modern</span>
+              </div>
+              <div class="info-row">
+                <span class="info-row-label">PostgreSQL Database</span>
+                <span class="info-row-value green">Connected (mc_network)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-row-label">Redis Cache</span>
+                <span class="info-row-value green">Connected (mc-redis)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-row-label">Web Reverse Proxy</span>
+                <span class="info-row-value purple">Caddy 2 (zarifzuhayer.tech)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
     </main>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-container"></div>
-
-  <!-- JavaScript Client Logic -->
-  <script src="/app.js"></script>
+  <!-- VoxelDash Client Logic -->
+  <script src="/voxeldash.js"></script>
 </body>
 </html>
