@@ -314,6 +314,7 @@ services:
     build:
       context: ./services/dashboard
       dockerfile: Dockerfile
+    image: mc-network-dashboard:latest
     container_name: mc-dashboard
     restart: unless-stopped
 
