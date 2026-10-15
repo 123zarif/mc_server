@@ -52,10 +52,12 @@ async function main() {
     await fastify.register(consoleWsRoutes);
     await fastify.register(telemetryWsRoutes);
 
-    // 5. Test Database Connection
+    // 5. Test Database Connection and Initialize Tables
     try {
       await db.query('SELECT NOW()');
       fastify.log.info('[PostgreSQL] Successfully connected to database pool.');
+      const { initDatabase } = await import('./db.js');
+      await initDatabase();
     } catch (err: any) {
       fastify.log.warn(`[PostgreSQL] Initial connection warning: ${err.message}. Retries active.`);
     }

@@ -1,692 +1,275 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minecraft Network Console & Dashboard</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
+  <title>Minecraft Network Console</title>
+  
+  <!-- Pure CSS shadcn/ui Design System (No Tailwind CSS) -->
+  <link rel="stylesheet" href="/shadcn.css" />
+
+  <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <!-- Xterm.js for interactive terminal -->
+
+  <!-- Xterm.js Terminal Canvas -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            mcbg: '#0f172a',
-            mccard: '#1e293b',
-            mcborder: '#334155',
-            mcaccent: '#38bdf8',
-            mcgreen: '#10b981',
-            mcred: '#ef4444',
-            mcorange: '#f59e0b'
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    .terminal-container .xterm-viewport { overflow-y: auto !important; }
-    .glow-accent { box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
-  </style>
 </head>
-<body class="bg-mcbg text-slate-100 min-h-screen flex flex-col antialiased select-none">
+<body>
 
-  <!-- ==================== LOGIN VIEW ==================== -->
-  <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
-    <div class="bg-mccard border border-mcborder rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-sky-500/30">
-          <i class="fa-solid fa-cube text-white text-3xl"></i>
+  <!-- ==================== AUTHENTICATION OVERLAY (SHADCN CARD) ==================== -->
+  <div id="auth-overlay" class="overlay">
+    <div class="card auth-modal">
+      <div class="card-header" style="text-align: center; align-items: center;">
+        <div class="logo-badge" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-cube" style="font-size: 1.25rem;"></i>
         </div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">Network Console</h1>
-        <p class="text-xs text-slate-400 mt-1">Authenticate using your Minecraft AuthMe credentials</p>
+        <h2 class="card-title" style="font-size: 1.25rem;">Minecraft Network Console</h2>
+        <p class="card-description">Authenticate via in-game AuthMe credentials</p>
       </div>
 
-      <div id="login-error" class="hidden mb-4 p-3 bg-red-950/60 border border-red-800/80 text-red-200 text-xs rounded-lg flex items-center gap-2">
-        <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
-        <span id="login-error-msg">Authentication failed</span>
+      <div class="card-content">
+        <!-- Tabs: Login vs Initial Setup -->
+        <div class="tabs-list" style="margin-bottom: 1.25rem;">
+          <button id="tab-btn-login" class="tabs-trigger active" onclick="switchAuthTab('login')">Sign In</button>
+          <button id="tab-btn-register" class="tabs-trigger" onclick="switchAuthTab('register')">Setup / Register</button>
+        </div>
+
+        <div id="auth-alert" class="badge badge-destructive hidden" style="width: 100%; border-radius: var(--radius); padding: 0.625rem; text-transform: none; margin-bottom: 1rem; display: none;">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="auth-alert-msg" style="flex: 1; text-align: left;"></span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form">
+          <div class="form-group">
+            <label class="label" for="login-username">Minecraft Username</label>
+            <input type="text" id="login-username" class="input" placeholder="e.g. litlua" required autocomplete="username" />
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="login-password">In-Game Password</label>
+            <input type="password" id="login-password" class="input" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+
+          <button type="submit" id="login-submit" class="btn btn-primary" style="width: 100%; height: 2.5rem; margin-top: 0.5rem;">
+            <span>Sign In to Console</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <!-- Register / Initial Setup Form -->
+        <form id="register-form" class="hidden" style="display: none;">
+          <div class="form-group">
+            <label class="label" for="reg-username">Admin Username</label>
+            <input type="text" id="reg-username" class="input" placeholder="e.g. litlua" required />
+            <span style="font-size: 0.6875rem; color: var(--muted-foreground); margin-top: 0.25rem;">Must match DASHBOARD_SUPERADMINS in .env</span>
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="reg-password">Set Initial In-Game Password</label>
+            <input type="password" id="reg-password" class="input" placeholder="At least 6 characters" minlength="6" required />
+          </div>
+
+          <button type="submit" id="reg-submit" class="btn btn-primary" style="width: 100%; height: 2.5rem; margin-top: 0.5rem;">
+            <span>Initialize Account</span>
+            <i class="fa-solid fa-check"></i>
+          </button>
+        </form>
       </div>
-
-      <form id="login-form" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Minecraft In-Game Username</label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">
-              <i class="fa-solid fa-user"></i>
-            </span>
-            <input type="text" id="login-username" required placeholder="e.g. litlua"
-                   class="w-full pl-9 pr-3 py-2 bg-slate-900 border border-mcborder rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">AuthMe In-Game Password</label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">
-              <i class="fa-solid fa-lock"></i>
-            </span>
-            <input type="password" id="login-password" required placeholder="••••••••"
-                   class="w-full pl-9 pr-3 py-2 bg-slate-900 border border-mcborder rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500" />
-          </div>
-        </div>
-
-        <button type="submit" id="login-btn"
-                class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold rounded-xl text-sm transition-all shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2">
-          <span>Authenticate & Connect</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </form>
     </div>
   </div>
 
-  <!-- ==================== MAIN DASHBOARD ==================== -->
-  <div id="dashboard-app" class="hidden flex-1 flex flex-col">
+  <!-- ==================== MAIN DASHBOARD INTERFACE ==================== -->
+  <div id="app" class="hidden" style="display: flex; flex-direction: column; flex: 1;">
     <!-- Top Navigation Bar -->
-    <header class="bg-mccard/80 backdrop-blur border-b border-mcborder px-6 py-3 flex items-center justify-between sticky top-0 z-40">
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-            <i class="fa-solid fa-cube text-lg"></i>
-          </div>
-          <div>
-            <span class="font-bold text-sm tracking-wide text-white">MC NETWORK</span>
-            <div class="flex items-center gap-1.5 text-[11px] text-emerald-400">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Proxy Active</span>
-            </div>
-          </div>
+    <header class="navbar">
+      <div class="nav-left">
+        <div class="logo-badge">
+          <i class="fa-solid fa-cube"></i>
+        </div>
+        <div>
+          <div class="brand-text">MC NETWORK</div>
         </div>
 
-        <!-- Server Selector Dropdown -->
-        <div class="h-6 w-px bg-slate-700 mx-2"></div>
-        <div class="flex items-center gap-2">
-          <label for="server-select" class="text-xs text-slate-400 font-medium">Server:</label>
-          <select id="server-select" class="bg-slate-900 border border-mcborder rounded-lg px-3 py-1.5 text-xs font-semibold text-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
-            <option value="velocity">Velocity Proxy (Gateway)</option>
-            <option value="survival" selected>Survival SMP (Main)</option>
-            <option value="pvp">PvP Arena (Competitive)</option>
-            <option value="auth">Auth Limbo (Gateway)</option>
+        <div style="height: 1.25rem; width: 1px; background-color: var(--border); margin: 0 0.5rem;"></div>
+
+        <!-- Node Selector -->
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 0.75rem; color: var(--muted-foreground);">Node:</span>
+          <select id="server-select" class="select" style="height: 2rem; width: 180px; font-size: 0.8125rem;">
+            <option value="velocity">Velocity Proxy</option>
+            <option value="survival" selected>Survival SMP</option>
+            <option value="pvp">PvP Arena</option>
+            <option value="auth">Auth Gateway</option>
           </select>
         </div>
       </div>
 
-      <!-- Power Controls & User Profile -->
-      <div class="flex items-center gap-3">
-        <!-- Power Action Buttons -->
-        <div class="flex items-center gap-1.5 bg-slate-900/60 p-1 rounded-xl border border-slate-800">
-          <button id="btn-restart" title="Restart Selected Server" class="px-2.5 py-1 text-xs font-medium text-amber-300 hover:bg-amber-500/20 rounded-lg transition-colors flex items-center gap-1.5">
+      <!-- Power Actions & User Menu -->
+      <div class="nav-right">
+        <div style="display: flex; align-items: center; gap: 0.375rem; background-color: #09090b; padding: 0.25rem; border-radius: calc(var(--radius) - 2px); border: 1px solid var(--border);">
+          <button id="btn-restart" class="btn btn-sm btn-warning" title="Restart Active Server">
             <i class="fa-solid fa-arrows-rotate"></i>
             <span>Restart</span>
           </button>
-          <button id="btn-stop" title="Stop Selected Server" class="px-2.5 py-1 text-xs font-medium text-red-300 hover:bg-red-500/20 rounded-lg transition-colors flex items-center gap-1.5">
+          <button id="btn-stop" class="btn btn-sm btn-destructive" title="Stop Active Server">
             <i class="fa-solid fa-power-off"></i>
             <span>Stop</span>
           </button>
-          <button id="btn-start" title="Start Selected Server" class="px-2.5 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 rounded-lg transition-colors flex items-center gap-1.5">
+          <button id="btn-start" class="btn btn-sm btn-success" title="Start Active Server">
             <i class="fa-solid fa-play"></i>
             <span>Start</span>
           </button>
         </div>
 
-        <!-- User Info -->
-        <div class="flex items-center gap-2 pl-2">
-          <img id="user-avatar" src="https://mc-heads.net/avatar/litlua/32" class="w-8 h-8 rounded-lg border border-slate-700" alt="Avatar" />
-          <div class="hidden sm:block text-left">
-            <div id="user-display-name" class="text-xs font-bold text-white">Admin</div>
-            <div id="user-group-badge" class="text-[10px] text-sky-400 font-mono">OP</div>
+        <div style="height: 1.25rem; width: 1px; background-color: var(--border); margin: 0 0.25rem;"></div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <img id="user-avatar" src="https://mc-heads.net/avatar/litlua/32" class="player-avatar" alt="Avatar" />
+          <div style="text-align: left;">
+            <div id="user-name" style="font-size: 0.8125rem; font-weight: 600; line-height: 1.2;">Admin</div>
+            <div id="user-role" style="font-size: 0.625rem; color: var(--muted-foreground); text-transform: uppercase;">OP</div>
           </div>
-          <button id="btn-logout" title="Sign out" class="ml-2 text-slate-400 hover:text-red-400 text-sm p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
-            <i class="fa-solid fa-right-from-bracket"></i>
+          <button id="btn-logout" class="btn btn-sm btn-outline btn-icon-sm" title="Log Out" style="margin-left: 0.25rem;">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- Main Content Grid -->
-    <main class="flex-1 p-6 grid grid-cols-1 xl:grid-cols-4 gap-6 max-w-[1920px] mx-auto w-full">
-      <!-- Left Column: Metrics & Live Console (Takes 3 columns on xl screens) -->
-      <section class="xl:col-span-3 flex flex-col gap-6">
-        <!-- Telemetry Cards Row -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <!-- Status Card -->
-          <div class="bg-mccard border border-mcborder rounded-2xl p-4 flex flex-col justify-between">
-            <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Container State</span>
-              <i class="fa-solid fa-server text-sky-400"></i>
-            </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="metric-state" class="text-xl font-bold text-emerald-400 capitalize">Running</span>
-              <span id="metric-uptime" class="text-[11px] text-slate-400">Uptime: 0s</span>
-            </div>
+    <!-- Main Container Grid -->
+    <main class="container">
+      <!-- Real-Time Metrics Cards Row -->
+      <section class="metrics-grid">
+        <!-- Container Status -->
+        <div class="card metric-card">
+          <div class="metric-header">
+            <span>Container Status</span>
+            <i class="fa-solid fa-server"></i>
           </div>
-
-          <!-- Players Card -->
-          <div class="bg-mccard border border-mcborder rounded-2xl p-4 flex flex-col justify-between">
-            <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Online Players</span>
-              <i class="fa-solid fa-users text-indigo-400"></i>
-            </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="metric-players" class="text-2xl font-bold text-white">0 / 0</span>
-              <span id="metric-ping" class="text-[11px] text-slate-400">-- ms</span>
-            </div>
+          <div class="metric-value">
+            <span id="metric-status" style="color: var(--success); text-transform: capitalize;">Running</span>
           </div>
+          <div id="metric-uptime" class="metric-sub" style="margin-top: 0.25rem;">Uptime: 0m</div>
+        </div>
 
-          <!-- CPU Card -->
-          <div class="bg-mccard border border-mcborder rounded-2xl p-4 flex flex-col justify-between">
-            <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>CPU Usage</span>
-              <i class="fa-solid fa-microchip text-emerald-400"></i>
-            </div>
-            <div class="mt-2">
-              <div class="flex justify-between items-baseline mb-1">
-                <span id="metric-cpu" class="text-xl font-bold text-white">0.0%</span>
-              </div>
-              <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                <div id="bar-cpu" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-            </div>
+        <!-- Online Players -->
+        <div class="card metric-card">
+          <div class="metric-header">
+            <span>Online Players</span>
+            <i class="fa-solid fa-users"></i>
           </div>
+          <div class="metric-value">
+            <span id="metric-players">0 / 0</span>
+          </div>
+          <div id="metric-ping" class="metric-sub" style="margin-top: 0.25rem;">Latency: -- ms</div>
+        </div>
 
-          <!-- Memory Card -->
-          <div class="bg-mccard border border-mcborder rounded-2xl p-4 flex flex-col justify-between">
-            <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Memory Usage</span>
-              <i class="fa-solid fa-memory text-amber-400"></i>
-            </div>
-            <div class="mt-2">
-              <div class="flex justify-between items-baseline mb-1">
-                <span id="metric-mem" class="text-xl font-bold text-white">0 MB</span>
-                <span id="metric-mem-limit" class="text-[11px] text-slate-400">/ 0 MB</span>
-              </div>
-              <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                <div id="bar-mem" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-            </div>
+        <!-- CPU Gauge -->
+        <div class="card metric-card">
+          <div class="metric-header">
+            <span>CPU Load</span>
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <div class="metric-value">
+            <span id="metric-cpu">0.0%</span>
+          </div>
+          <div class="progress-bar">
+            <div id="bar-cpu" class="progress-fill" style="width: 0%; background-color: var(--success);"></div>
           </div>
         </div>
 
-        <!-- Interactive Terminal Console Container -->
-        <div class="bg-mccard border border-mcborder rounded-2xl flex-1 flex flex-col overflow-hidden min-h-[500px] shadow-xl">
-          <!-- Terminal Header Bar -->
-          <div class="bg-slate-900/90 border-b border-mcborder px-4 py-2.5 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="flex gap-1.5">
-                <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
-                <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
-                <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-              </div>
-              <span id="terminal-title" class="text-xs font-mono text-slate-400 ml-2">console@mc-survival</span>
+        <!-- Memory Allocation -->
+        <div class="card metric-card">
+          <div class="metric-header">
+            <span>RAM Allocation</span>
+            <i class="fa-solid fa-memory"></i>
+          </div>
+          <div class="metric-value">
+            <span id="metric-ram">0 MB</span>
+            <span id="metric-ram-max" class="metric-sub">/ 0 MB</span>
+          </div>
+          <div class="progress-bar">
+            <div id="bar-ram" class="progress-fill" style="width: 0%; background-color: var(--warning);"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dashboard Grid: Console (Left) + Player List / Nodes (Right) -->
+      <section class="dashboard-grid">
+        <!-- Left: Interactive Terminal -->
+        <div class="card terminal-card">
+          <div class="terminal-header">
+            <div class="terminal-title">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--success);"></span>
+              <span id="terminal-badge">console@mc-survival</span>
             </div>
 
-            <!-- Quick Action Chips -->
-            <div class="flex items-center gap-1.5 overflow-x-auto text-[11px]">
-              <button onclick="dispatchQuickCommand('tps')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono transition-colors">/tps</button>
-              <button onclick="dispatchQuickCommand('list')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono transition-colors">/list</button>
-              <button onclick="dispatchQuickCommand('gc')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-mono transition-colors">/gc</button>
-              <button onclick="clearTerminal()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded transition-colors" title="Clear View">
-                <i class="fa-solid fa-ban"></i>
+            <!-- Quick Action Command Chips -->
+            <div class="terminal-chips">
+              <button class="chip-btn" onclick="sendQuickCommand('tps')">/tps</button>
+              <button class="chip-btn" onclick="sendQuickCommand('list')">/list</button>
+              <button class="chip-btn" onclick="sendQuickCommand('gc')">/gc</button>
+              <button class="chip-btn" onclick="sendQuickCommand('spark tps')">/spark tps</button>
+              <button class="chip-btn" onclick="clearTerminal()" title="Clear Output">
+                <i class="fa-solid fa-eraser"></i>
               </button>
             </div>
           </div>
 
-          <!-- Xterm Output Canvas -->
-          <div id="terminal-target" class="terminal-container flex-1 bg-[#090d16] p-3 text-sm"></div>
+          <!-- Canvas -->
+          <div id="terminal-container" class="terminal-canvas"></div>
 
-          <!-- Command Input Bar -->
-          <form id="console-form" class="bg-slate-900 border-t border-mcborder p-3 flex items-center gap-2">
-            <span class="text-sky-400 font-mono text-sm font-bold pl-1">&gt;</span>
-            <input type="text" id="console-input" placeholder="Type a command (e.g. op, kick, say, tps)..."
-                   class="flex-1 bg-transparent border-0 text-sm font-mono text-white focus:outline-none placeholder-slate-500" />
-            <button type="submit" class="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5">
-              <span>Send</span>
-              <i class="fa-solid fa-paper-plane text-[10px]"></i>
-            </button>
+          <!-- Command Input -->
+          <form id="cmd-form" class="terminal-prompt">
+            <span class="prompt-symbol">&gt;</span>
+            <input type="text" id="cmd-input" class="terminal-input" placeholder="Type a command (e.g. op, kick, say, gamemode)..." autocomplete="off" />
+            <button type="submit" class="btn btn-sm btn-primary">Execute</button>
           </form>
         </div>
-      </section>
 
-      <!-- Right Column: Online Players & Network Overview -->
-      <section class="xl:col-span-1 flex flex-col gap-6">
-        <!-- Online Players Management Card -->
-        <div class="bg-mccard border border-mcborder rounded-2xl flex-1 flex flex-col overflow-hidden shadow-xl">
-          <div class="bg-slate-900/90 border-b border-mcborder p-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-user-group text-sky-400 text-sm"></i>
-              <h2 class="text-sm font-bold text-white">Online Players</h2>
+        <!-- Right: Online Players & Nodes Health -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Online Players Card -->
+          <div class="card" style="flex: 1; min-height: 280px;">
+            <div class="card-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+              <div>
+                <h3 class="card-title">Online Players</h3>
+                <p class="card-description">Connected to current node</p>
+              </div>
+              <span id="player-badge" class="badge badge-default">0</span>
             </div>
-            <span id="player-count-badge" class="px-2 py-0.5 rounded-full bg-slate-800 text-[11px] font-mono text-slate-300">0</span>
+
+            <div id="player-container" class="card-content" style="overflow-y: auto; max-height: 280px; padding: 0.75rem;">
+              <div style="text-align: center; color: var(--muted-foreground); padding: 2rem 0; font-size: 0.8125rem;">
+                <i class="fa-solid fa-ghost" style="font-size: 1.5rem; opacity: 0.4; margin-bottom: 0.5rem; display: block;"></i>
+                No players online
+              </div>
+            </div>
           </div>
 
-          <!-- Player List -->
-          <div id="player-list-container" class="flex-1 p-3 overflow-y-auto space-y-2">
-            <div class="text-center py-10 text-slate-500 text-xs">
-              <i class="fa-solid fa-ghost text-2xl mb-2 opacity-50"></i>
-              <p>No players online on this node</p>
+          <!-- Network Nodes Health Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Network Nodes</h3>
+              <p class="card-description">Cluster connectivity</p>
             </div>
-          </div>
-        </div>
 
-        <!-- Network Nodes Status Card -->
-        <div class="bg-mccard border border-mcborder rounded-2xl p-4 shadow-xl">
-          <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-network-wired text-indigo-400 text-xs"></i>
-            <span>Network Health</span>
-          </h2>
-          <div id="nodes-health-list" class="space-y-2.5">
-            <!-- Dynamically populated -->
+            <div id="nodes-container" class="card-content" style="padding: 0.75rem;">
+              <!-- Populated dynamically -->
+            </div>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- JavaScript Application Script -->
-  <script>
-    // State
-    let authToken = localStorage.getItem('mc_token') || null;
-    let currentUser = null;
-    let activeServerId = 'survival';
-    let consoleSocket = null;
-    let telemetrySocket = null;
-    let terminal = null;
-    let fitAddon = null;
-    let commandHistory = [];
-    let historyIndex = -1;
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
 
-    // Elements
-    const loginScreen = document.getElementById('login-screen');
-    const dashboardApp = document.getElementById('dashboard-app');
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
-    const loginErrorMsg = document.getElementById('login-error-msg');
-    const serverSelect = document.getElementById('server-select');
-    const consoleForm = document.getElementById('console-form');
-    const consoleInput = document.getElementById('console-input');
-    const btnRestart = document.getElementById('btn-restart');
-    const btnStop = document.getElementById('btn-stop');
-    const btnStart = document.getElementById('btn-start');
-    const btnLogout = document.getElementById('btn-logout');
-
-    // Init
-    window.addEventListener('DOMContentLoaded', async () => {
-      initTerminal();
-      if (authToken) {
-        const ok = await verifySession();
-        if (ok) {
-          showDashboard();
-        } else {
-          showLogin();
-        }
-      } else {
-        showLogin();
-      }
-    });
-
-    function initTerminal() {
-      terminal = new Terminal({
-        cursorBlink: true,
-        fontSize: 13,
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        theme: {
-          background: '#090d16',
-          foreground: '#e2e8f0',
-          cursor: '#38bdf8'
-        },
-        convertEol: true
-      });
-      fitAddon = new FitAddon.FitAddon();
-      terminal.loadAddon(fitAddon);
-      terminal.open(document.getElementById('terminal-target'));
-      fitAddon.fit();
-
-      window.addEventListener('resize', () => {
-        if (fitAddon) fitAddon.fit();
-      });
-    }
-
-    function clearTerminal() {
-      if (terminal) terminal.clear();
-    }
-
-    function showLogin() {
-      loginScreen.classList.remove('hidden');
-      dashboardApp.classList.add('hidden');
-      if (consoleSocket) consoleSocket.close();
-      if (telemetrySocket) telemetrySocket.close();
-    }
-
-    function showDashboard() {
-      loginScreen.classList.add('hidden');
-      dashboardApp.classList.remove('hidden');
-      if (fitAddon) setTimeout(() => fitAddon.fit(), 100);
-
-      connectTelemetry();
-      switchServer(activeServerId);
-    }
-
-    // Login Form Handler
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      loginError.classList.add('hidden');
-      const username = document.getElementById('login-username').value.trim();
-      const password = document.getElementById('login-password').value;
-
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Authentication failed');
-        }
-
-        authToken = data.token;
-        currentUser = data.user;
-        localStorage.setItem('mc_token', authToken);
-        updateUserProfile();
-        showDashboard();
-      } catch (err) {
-        loginErrorMsg.innerText = err.message;
-        loginError.classList.remove('hidden');
-      }
-    });
-
-    async function verifySession() {
-      try {
-        const res = await fetch('/api/auth/me', {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        if (!res.ok) return false;
-        const data = await res.json();
-        currentUser = data.user;
-        updateUserProfile();
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    function updateUserProfile() {
-      if (!currentUser) return;
-      document.getElementById('user-display-name').innerText = currentUser.username;
-      document.getElementById('user-avatar').src = `https://mc-heads.net/avatar/${currentUser.username}/32`;
-      document.getElementById('user-group-badge').innerText = (currentUser.groups[0] || 'ADMIN').toUpperCase();
-    }
-
-    btnLogout.addEventListener('click', () => {
-      localStorage.removeItem('mc_token');
-      authToken = null;
-      currentUser = null;
-      showLogin();
-    });
-
-    // Server Switcher
-    serverSelect.addEventListener('change', (e) => {
-      switchServer(e.target.value);
-    });
-
-    function switchServer(serverId) {
-      activeServerId = serverId;
-      document.getElementById('terminal-title').innerText = `console@mc-${serverId}`;
-      connectConsole(serverId);
-    }
-
-    // WebSocket Console Connection
-    function connectConsole(serverId) {
-      if (consoleSocket) {
-        consoleSocket.close();
-      }
-
-      terminal.clear();
-      terminal.writeln(`\x1b[36mConnecting to live console for ${serverId}...\x1b[0m`);
-
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws/console/${serverId}?token=${authToken}`;
-
-      consoleSocket = new WebSocket(wsUrl);
-
-      consoleSocket.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'log') {
-            terminal.write(msg.data);
-          } else if (msg.type === 'info') {
-            terminal.write(msg.message);
-          } else if (msg.type === 'error') {
-            terminal.writeln(`\x1b[31m[Error] ${msg.message}\x1b[0m`);
-          }
-        } catch {
-          terminal.write(event.data);
-        }
-      };
-
-      consoleSocket.onclose = () => {
-        terminal.writeln(`\r\n\x1b[33mConsole stream disconnected.\x1b[0m`);
-      };
-
-      consoleSocket.onerror = (err) => {
-        terminal.writeln(`\r\n\x1b[31mWebSocket connection error.\x1b[0m`);
-      };
-    }
-
-    // Command Dispatch
-    consoleForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const cmd = consoleInput.value.trim();
-      if (!cmd) return;
-
-      commandHistory.push(cmd);
-      historyIndex = commandHistory.length;
-
-      if (consoleSocket && consoleSocket.readyState === WebSocket.OPEN) {
-        consoleSocket.send(JSON.stringify({ type: 'command', command: cmd }));
-      } else {
-        // Fallback REST endpoint
-        fetch(`/api/servers/${activeServerId}/command`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ command: cmd })
-        });
-      }
-
-      consoleInput.value = '';
-    });
-
-    // Terminal Command History navigation (Up/Down)
-    consoleInput.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowUp') {
-        if (historyIndex > 0) {
-          historyIndex--;
-          consoleInput.value = commandHistory[historyIndex] || '';
-        }
-      } else if (e.key === 'ArrowDown') {
-        if (historyIndex < commandHistory.length - 1) {
-          historyIndex++;
-          consoleInput.value = commandHistory[historyIndex] || '';
-        } else {
-          historyIndex = commandHistory.length;
-          consoleInput.value = '';
-        }
-      }
-    });
-
-    function dispatchQuickCommand(cmd) {
-      if (consoleSocket && consoleSocket.readyState === WebSocket.OPEN) {
-        consoleSocket.send(JSON.stringify({ type: 'command', command: cmd }));
-      }
-    }
-
-    // Power Controls
-    async function triggerPower(action) {
-      if (!confirm(`Are you sure you want to ${action} server '${activeServerId}'?`)) return;
-
-      try {
-        const res = await fetch(`/api/servers/${activeServerId}/power`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ action })
-        });
-        const data = await res.json();
-        terminal.writeln(`\r\n\x1b[35m[Power Control] ${data.message || data.error}\x1b[0m`);
-      } catch (err) {
-        alert('Power action error: ' + err.message);
-      }
-    }
-
-    btnRestart.addEventListener('click', () => triggerPower('restart'));
-    btnStop.addEventListener('click', () => triggerPower('stop'));
-    btnStart.addEventListener('click', () => triggerPower('start'));
-
-    // WebSocket Telemetry Connection
-    function connectTelemetry() {
-      if (telemetrySocket) telemetrySocket.close();
-
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws/telemetry?token=${authToken}`;
-
-      telemetrySocket = new WebSocket(wsUrl);
-
-      telemetrySocket.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'telemetry' && payload.servers) {
-            updateDashboardTelemetry(payload.servers);
-          }
-        } catch (e) {
-          console.error('Telemetry parse error:', e);
-        }
-      };
-
-      telemetrySocket.onclose = () => {
-        setTimeout(connectTelemetry, 3000);
-      };
-    }
-
-    function updateDashboardTelemetry(servers) {
-      const active = servers.find(s => s.id === activeServerId) || servers[0];
-      if (!active) return;
-
-      // Update State & Uptime
-      const stateEl = document.getElementById('metric-state');
-      stateEl.innerText = active.metrics.state;
-      stateEl.className = `text-xl font-bold capitalize ${active.metrics.state === 'running' ? 'text-emerald-400' : 'text-red-400'}`;
-
-      const uptimeHours = Math.floor(active.metrics.uptimeSeconds / 3600);
-      const uptimeMins = Math.floor((active.metrics.uptimeSeconds % 3600) / 60);
-      document.getElementById('metric-uptime').innerText = `Uptime: ${uptimeHours}h ${uptimeMins}m`;
-
-      // Update Players & Ping
-      document.getElementById('metric-players').innerText = `${active.players.online} / ${active.players.max}`;
-      document.getElementById('metric-ping').innerText = active.pingMs ? `${active.pingMs} ms` : '-- ms';
-
-      // Update CPU
-      document.getElementById('metric-cpu').innerText = `${active.metrics.cpuPercent}%`;
-      document.getElementById('bar-cpu').style.width = `${Math.min(100, active.metrics.cpuPercent)}%`;
-
-      // Update RAM
-      document.getElementById('metric-mem').innerText = `${active.metrics.memoryUsedMb} MB`;
-      document.getElementById('metric-mem-limit').innerText = `/ ${active.metrics.memoryLimitMb} MB (${active.metrics.memoryPercent}%)`;
-      document.getElementById('bar-mem').style.width = `${active.metrics.memoryPercent}%`;
-
-      // Update Online Players List
-      updatePlayersList(active.players.list);
-
-      // Update Network Health Sidebar
-      updateNodesHealth(servers);
-    }
-
-    function updatePlayersList(players) {
-      const container = document.getElementById('player-list-container');
-      document.getElementById('player-count-badge').innerText = players.length;
-
-      if (!players || players.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-10 text-slate-500 text-xs">
-            <i class="fa-solid fa-ghost text-2xl mb-2 opacity-50"></i>
-            <p>No players online on this node</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = players.map(p => `
-        <div class="p-2.5 bg-slate-900/70 border border-slate-800 rounded-xl flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <img src="https://mc-heads.net/avatar/${p.name}/28" class="w-7 h-7 rounded border border-slate-700" alt="${p.name}" />
-            <div>
-              <div class="text-xs font-semibold text-white">${p.name}</div>
-              <div class="text-[10px] text-slate-400 font-mono">${p.id.substring(0, 8)}...</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1">
-            <button onclick="playerAction('${p.name}', 'kick')" title="Kick" class="p-1 hover:bg-slate-800 text-amber-400 rounded text-xs">
-              <i class="fa-solid fa-user-slash"></i>
-            </button>
-            <button onclick="playerAction('${p.name}', 'ban')" title="Ban" class="p-1 hover:bg-slate-800 text-red-400 rounded text-xs">
-              <i class="fa-solid fa-gavel"></i>
-            </button>
-            <button onclick="playerAction('${p.name}', 'op')" title="Give OP" class="p-1 hover:bg-slate-800 text-sky-400 rounded text-xs">
-              <i class="fa-solid fa-crown"></i>
-            </button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function playerAction(player, action) {
-      if (!confirm(`Execute '${action}' on player ${player}?`)) return;
-
-      try {
-        const res = await fetch(`/api/servers/${activeServerId}/players/action`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ player, action })
-        });
-        const data = await res.json();
-        terminal.writeln(`\r\n\x1b[32m[Player Moderation] ${data.response || data.message || 'Done'}\x1b[0m`);
-      } catch (err) {
-        alert('Action error: ' + err.message);
-      }
-    }
-
-    function updateNodesHealth(servers) {
-      const container = document.getElementById('nodes-health-list');
-      container.innerHTML = servers.map(s => `
-        <div class="p-2.5 bg-slate-900/60 border border-slate-800/80 rounded-xl flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full ${s.metrics.state === 'running' ? 'bg-emerald-400' : 'bg-red-400'}"></span>
-            <div>
-              <div class="text-xs font-medium text-white">${s.name}</div>
-              <div class="text-[10px] text-slate-400">${s.type === 'proxy' ? 'Proxy Edge' : `${s.players.online} online`}</div>
-            </div>
-          </div>
-          <span class="text-[11px] font-mono text-slate-400">${s.metrics.cpuPercent}% CPU</span>
-        </div>
-      `).join('');
-    }
-  </script>
+  <!-- JavaScript Client Logic -->
+  <script src="/app.js"></script>
 </body>
 </html>
-
