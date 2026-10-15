@@ -5,18 +5,21 @@ import { executeContainerCommand, controlContainerPower } from '../services/dock
 import { verifyToken } from '../auth/jwt.js';
 
 export const serverRoutes: FastifyPluginAsync = async (fastify) => {
-  // Authentication hook for all /api/servers routes
-  fastify.addHook('preHandler', async (request, reply) => {
+  // Helper function to verify admin auth
+  const requireAdmin = (request: any, reply: any) => {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return reply.code(401).send({ error: 'Unauthorized: Authentication required' });
+      reply.code(401).send({ error: 'Unauthorized: Authentication required' });
+      return false;
     }
     const token = authHeader.substring(7);
     const session = verifyToken(token);
     if (!session || !session.isAdmin) {
-      return reply.code(403).send({ error: 'Forbidden: Admin session required' });
+      reply.code(403).send({ error: 'Forbidden: Admin session required' });
+      return false;
     }
-  });
+    return true;
+  };
 
   // Get status of all servers
   fastify.get('/', async (_request, reply) => {
@@ -38,6 +41,7 @@ export const serverRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Dispatch console command to a server
   fastify.post('/:id/command', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     const { id } = request.params as { id: string };
     const { command } = request.body as { command?: string };
 
@@ -67,6 +71,7 @@ export const serverRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Control container power (start, stop, restart)
   fastify.post('/:id/power', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     const { id } = request.params as { id: string };
     const { action } = request.body as { action?: 'start' | 'stop' | 'restart' };
 

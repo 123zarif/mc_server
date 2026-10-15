@@ -5,19 +5,7 @@ import { executeContainerCommand } from '../services/docker.js';
 import { verifyToken } from '../auth/jwt.js';
 
 export const playerRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.addHook('preHandler', async (request, reply) => {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return reply.code(401).send({ error: 'Unauthorized: Authentication required' });
-    }
-    const token = authHeader.substring(7);
-    const session = verifyToken(token);
-    if (!session || !session.isAdmin) {
-      return reply.code(403).send({ error: 'Forbidden: Admin session required' });
-    }
-  });
-
-  // Get players online on a specific server
+  // Get players online on a specific server (Public read)
   fastify.get('/:id/players', async (request, reply) => {
     const { id } = request.params as { id: string };
     const serverNode = config.servers.find(s => s.id === id);
@@ -34,8 +22,18 @@ export const playerRoutes: FastifyPluginAsync = async (fastify) => {
     });
   });
 
-  // Player action: kick, ban, op, deop
+  // Player action: kick, ban, op, deop (Admin only)
   fastify.post('/:id/players/action', async (request, reply) => {
+    const authHeader = request.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return reply.code(401).send({ error: 'Unauthorized: Authentication required' });
+    }
+    const token = authHeader.substring(7);
+    const session = verifyToken(token);
+    if (!session || !session.isAdmin) {
+      return reply.code(403).send({ error: 'Forbidden: Admin session required' });
+    }
+
     const { id } = request.params as { id: string };
     const { player, action, reason } = request.body as {
       player?: string;

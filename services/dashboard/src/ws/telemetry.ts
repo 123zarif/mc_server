@@ -32,22 +32,8 @@ export const telemetryWsRoutes: FastifyPluginAsync = async (fastify) => {
     clearInterval(interval);
   });
 
-  fastify.get('/ws/telemetry', { websocket: true }, (connection: any, req) => {
-    const query = req.query as { token?: string };
+  fastify.get('/ws/telemetry', { websocket: true }, (connection: any, _req) => {
     const socket: WebSocket = connection.socket || connection;
-
-    if (!query.token) {
-      socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
-      socket.close();
-      return;
-    }
-
-    const session = verifyToken(query.token);
-    if (!session || !session.isAdmin) {
-      socket.send(JSON.stringify({ type: 'error', message: 'Forbidden' }));
-      socket.close();
-      return;
-    }
 
     clients.add(socket);
 

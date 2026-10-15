@@ -52,6 +52,22 @@ async function main() {
       return {
         serverName: config.serverName,
         superadmins: config.superadmins,
+        connection: {
+          java: {
+            host: process.env.DOMAIN || 'zarifzuhayer.tech',
+            port: parseInt(process.env.MINECRAFT_JAVA_PORT || '25565', 10),
+            version: '1.21.4 (Java Edition)'
+          },
+          bedrock: {
+            host: process.env.DOMAIN || 'zarifzuhayer.tech',
+            port: parseInt(process.env.MINECRAFT_BEDROCK_PORT || '19132', 10),
+            version: 'Latest Bedrock (Android / iOS / Windows / Console)'
+          },
+          voice: {
+            port: parseInt(process.env.VOICE_CHAT_PORT || '24454', 10),
+            protocol: 'UDP'
+          }
+        },
         servers: config.servers.map(s => ({
           id: s.id,
           name: s.name,

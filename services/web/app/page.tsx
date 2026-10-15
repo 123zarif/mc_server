@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navbar } from '../components/Navbar';
 import { Sidebar, TabType } from '../components/Sidebar';
 import { OverviewTab } from '../components/OverviewTab';
+import { ConnectionTab } from '../components/ConnectionTab';
 import { ConsoleTab } from '../components/ConsoleTab';
 import { PlayersTab } from '../components/PlayersTab';
 import { SettingsTab } from '../components/SettingsTab';
@@ -34,6 +35,12 @@ interface ServerTelemetry {
   };
 }
 
+interface ConnectionMetadata {
+  java: { host: string; port: number; version: string };
+  bedrock: { host: string; port: number; version: string };
+  voice: { port: number; protocol: string };
+}
+
 export default function DashboardPage() {
   const [serverName, setServerName] = useState<string>(
     process.env.NEXT_PUBLIC_SERVER_NAME || 'Minecraft Network'
@@ -45,6 +52,12 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ username: string; isAdmin: boolean } | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [networkStatus, setNetworkStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
+
+  const [connectionInfo, setConnectionInfo] = useState<ConnectionMetadata>({
+    java: { host: 'zarifzuhayer.tech', port: 25565, version: '1.21.4 (Java Edition)' },
+    bedrock: { host: 'zarifzuhayer.tech', port: 19132, version: 'Latest Bedrock (Android / iOS / Windows)' },
+    voice: { port: 24454, protocol: 'UDP' },
+  });
 
   const [nodesConfig, setNodesConfig] = useState<ServerNodeConfig[]>([
     { id: 'velocity', name: 'Velocity Proxy', type: 'proxy', description: 'Edge Proxy', port: 25577 },
@@ -71,7 +84,7 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // 2. Fetch Server Config (Dynamic Name & Nodes)
+  // 2. Fetch Server Config & Connection Info
   useEffect(() => {
     async function fetchConfig() {
       try {
@@ -80,6 +93,7 @@ export default function DashboardPage() {
           const data = await res.json();
           if (data.serverName) setServerName(data.serverName);
           if (data.superadmins) setSuperadmins(data.superadmins);
+          if (data.connection) setConnectionInfo(data.connection);
           if (data.servers && Array.isArray(data.servers)) {
             setNodesConfig(data.servers);
           }
@@ -91,7 +105,7 @@ export default function DashboardPage() {
     fetchConfig();
   }, []);
 
-  // 3. Connect Telemetry WebSocket / Polling Fallback
+  // 3. Connect Telemetry WebSocket / Polling Fallback (Public & Instant)
   useEffect(() => {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/ws/telemetry`;
@@ -121,13 +135,12 @@ export default function DashboardPage() {
       setNetworkStatus('disconnected');
     }
 
-    // Polling fallback every 4s
+    // Polling fallback every 3.5s (Works for both guests and admins)
     const fetchServers = async () => {
-      if (!token) return;
       try {
-        const res = await fetch('/api/servers', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/servers', { headers });
         if (res.ok) {
           const data = await res.json();
           if (data.servers && Array.isArray(data.servers)) {
@@ -144,7 +157,7 @@ export default function DashboardPage() {
       }
     };
 
-    pollInterval = setInterval(fetchServers, 4000);
+    pollInterval = setInterval(fetchServers, 3500);
     fetchServers();
 
     return () => {
@@ -267,8 +280,14 @@ export default function DashboardPage() {
     );
   });
 
+  // Calculate total players across network
+  const totalNetworkPlayers = Object.values(telemetry).reduce(
+    (acc, curr) => acc + (curr.players?.online || 0),
+    0
+  );
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#0c0816]">
       {/* Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -289,7 +308,7 @@ export default function DashboardPage() {
           networkStatus={networkStatus}
         />
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 bg-[#0c0816]">
           <div className="mx-auto max-w-7xl">
             {currentTab === 'overview' && (
               <OverviewTab
@@ -300,6 +319,16 @@ export default function DashboardPage() {
                 onPowerAction={handlePowerAction}
                 onExecuteCommand={handleExecuteCommand}
                 isAdmin={!!user?.isAdmin}
+                connectionInfo={connectionInfo}
+              />
+            )}
+
+            {currentTab === 'connection' && (
+              <ConnectionTab
+                serverName={serverName}
+                connectionInfo={connectionInfo}
+                onlineCount={totalNetworkPlayers}
+                maxPlayers={100}
               />
             )}
 
@@ -343,4 +372,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
