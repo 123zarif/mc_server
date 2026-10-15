@@ -307,6 +307,49 @@ services:
         limits:
           memory: "512M"
 
+  # =================================================================
+  # 7. NETWORK MANAGEMENT DASHBOARD & API
+  # =================================================================
+  dashboard:
+    build:
+      context: ./services/dashboard
+      dockerfile: Dockerfile
+    container_name: mc-dashboard
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_started
+
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+
+    environment:
+      DASHBOARD_PORT: "3000"
+      DASHBOARD_HOST: "0.0.0.0"
+      JWT_SECRET: "${DASHBOARD_JWT_SECRET:-${FORWARDING_SECRET}}"
+      DASHBOARD_SUPERADMINS: "${DASHBOARD_SUPERADMINS:-litlua,ozzy}"
+      LUCKPERMS_ADMIN_GROUPS: "admin,owner,operator,op,staff"
+
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: "${POSTGRES_DB:-mc_network}"
+      POSTGRES_USER: "${POSTGRES_USER:-mc_admin}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+
+      TZ: "${TZ:-UTC}"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - internal_net
+
+    deploy:
+      resources:
+        limits:
+          memory: "512M"
+
 # ===================================================================
 # NETWORKS
 # ===================================================================
