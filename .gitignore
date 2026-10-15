@@ -57,6 +57,14 @@ forwarding.secret
 **/entities/
 **/poi/
 
+# Keep static world template chunks
+!config/auth/world-template/**/region/
+!config/auth/world-template/**/region/**
+!config/auth/world-template/**/entities/
+!config/auth/world-template/**/entities/**
+!config/auth/world-template/**/poi/
+!config/auth/world-template/**/poi/**
+
 # ===================================================================
 # Plugin Runtime Data (Allow configs, ignore player/db bloat)
 # ===================================================================
