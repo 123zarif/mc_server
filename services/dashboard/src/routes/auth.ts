@@ -16,7 +16,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       // 1. Fetch AuthMe record from PostgreSQL
       const query = `
-        SELECT id, username, realname, password, salt, email, "premiumUUID"
+        SELECT *
         FROM authme
         WHERE LOWER(username) = LOWER($1)
         LIMIT 1
@@ -37,7 +37,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       // 3. Verify Admin permissions via LuckPerms
-      const playerUuid = playerRecord.premiumUUID || undefined;
+      const playerUuid = playerRecord.premiumUUID || playerRecord.uuid || playerRecord.player_uuid || undefined;
       const permInfo = await checkPlayerPermissions(playerRecord.username || username, playerUuid);
 
       if (!permInfo.isAdmin) {
@@ -65,6 +65,11 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
     } catch (err: any) {
       fastify.log.error(err);
+      if (err.code === '42P01') {
+        return reply.code(503).send({
+          error: 'The AuthMe database table has not been initialized yet. Start your Minecraft server (mc-auth) and register an account in-game first.'
+        });
+      }
       return reply.code(500).send({ error: 'Authentication service error: ' + err.message });
     }
   });
