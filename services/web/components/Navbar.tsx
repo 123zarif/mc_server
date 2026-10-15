@@ -58,9 +58,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </div>
 
-        {/* Squaremap link */}
+        {/* Squaremap link with trailing slash */}
         <a
-          href="/map"
+          href="/map/"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card-sub border border-border text-xs font-medium text-text-muted hover:text-white hover:border-primary/40 transition-colors"

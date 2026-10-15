@@ -6,7 +6,9 @@
 # Direct Port Access (e.g. http://localhost:3001 or http://<vps-ip>:3001)
 # ===================================================================
 :3001 {
-    handle_path /map* {
+    # Ensure trailing slash so relative assets (./assets, ./tiles) resolve properly
+    redir /map /map/ permanent
+    handle_path /map/* {
         reverse_proxy mc-survival:8080
     }
 
@@ -24,10 +26,16 @@
 }
 
 # ===================================================================
-# Main Domain & Automatic TLS (zarifzuhayer.tech)
+# Main Domain & Subdomains (zarifzuhayer.tech)
 # ===================================================================
+http://map.zarifzuhayer.tech, map.zarifzuhayer.tech {
+    reverse_proxy mc-survival:8080
+}
+
 http://zarifzuhayer.tech, zarifzuhayer.tech {
-    handle_path /map* {
+    # Ensure trailing slash so relative assets (./assets, ./tiles) resolve properly
+    redir /map /map/ permanent
+    handle_path /map/* {
         reverse_proxy mc-survival:8080
     }
 
