@@ -376,41 +376,12 @@ services:
         limits:
           memory: "256M"
 
-  # =================================================================
-  # 9. CADDY REVERSE PROXY & AUTOMATIC TLS
-  # =================================================================
-  caddy:
-    image: caddy:2-alpine
-    container_name: mc-caddy
-    restart: unless-stopped
-
-    ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-      - "${HTTPS_PORT:-443}:443/udp"
-      - "${DASHBOARD_PORT:-3001}:3001"
-
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
-    networks:
-      - internal_net
-
-    deploy:
-      resources:
-        limits:
-          memory: "256M"
-
-# ===================================================================
-# NETWORKS
-# ===================================================================
 networks:
-  internal_net:
-    driver: bridge
+  default:
+  proxy-net:
+    external: true
 
-# ===================================================================
+  # ===================================================================
 # VOLUMES
 # ===================================================================
 volumes:
