@@ -184,6 +184,7 @@ services:
 
     networks:
       - internal_net
+      - proxy-net
 
     deploy:
       resources:
@@ -343,6 +344,7 @@ services:
 
     networks:
       - internal_net
+      - proxy-net
 
     deploy:
       resources:
@@ -370,6 +372,7 @@ services:
 
     networks:
       - internal_net
+      - proxy-net
 
     deploy:
       resources:
@@ -377,11 +380,11 @@ services:
           memory: "256M"
 
 networks:
-  default:
+  internal_net:
   proxy-net:
     external: true
 
-  # ===================================================================
+# ===================================================================
 # VOLUMES
 # ===================================================================
 volumes:
@@ -391,5 +394,3 @@ volumes:
   proxy_data:
   postgres_data:
   redis_data:
-  caddy_data:
-  caddy_config:
